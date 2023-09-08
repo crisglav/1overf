@@ -7,11 +7,12 @@ close all
 clear all
 
 % FOOOF settings
-self.freq_range =        [2 40]; % [3 40]
-self.peak_width_limits = [0.5 12]; % [1 8] % [0.5 12];
-self.max_n_peaks       = inf; % 3;     % inf;
-self.min_peak_height   = 0; % 0.15;  % 0;
+self.freq_range =        [3 40]; % [3 40]
+self.peak_width_limits = [1 8]; % [1 8] % [0.5 12];
+self.max_n_peaks       = 6; % 3;     % inf;
+self.min_peak_height   = 0.15; % 0.15;  % 0;
 self.peak_threshold    = 2;
+self.aperiodic_mode    = 'fixed'; %'knee'
 
 % Fixed settings
 self.ap_percentile_thresh = 0.025;
@@ -59,10 +60,10 @@ self.spectrum_flat_full = self.pow_orig - self.ap_fit_full;
 self.fooofed_spectrum_full = self.peak_fit_full + self.ap_fit_full;
 
 % ===== Calculate R^2 and error of the model fit ======
-r2 = corr(self.pow_orig', self.fooofed_spectrum_full')^2;
-mae = mean(abs(self.pow_orig - self.fooofed_spectrum_full));
-mse = mean((self.pow_orig - self.fooofed_spectrum_full).^2);
-rmse = sqrt(mean((self.pow_orig - self.fooofed_spectrum_full).^2));
+r2 = corr(log10(self.pow_orig)', self.fooofed_spectrum_full')^2;
+mae = mean(abs(log10(self.pow_orig) - self.fooofed_spectrum_full));
+mse = mean((log10(self.pow_orig) - self.fooofed_spectrum_full).^2);
+rmse = sqrt(mean((log10(self.pow_orig) - self.fooofed_spectrum_full).^2));
 %% Generate report
 
 % Save fooof model
