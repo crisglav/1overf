@@ -29,15 +29,10 @@ params.RawDataPath = '../data/blinded';
 params.PreprocessedDataPath = '../data/blinded/derivatives_v2023_08_18';
 params.AtlasPath = 'schaefer_parcellations/Schaefer2018_100Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv';
 params.SourcePath = '../results/source';
-path_power_whole = '../results/power/whole';
 path_power_pfc = '../results/power/PFC';
 path_power_s1 = '../results/power/S1';
 path_power_vis = '../results/power/VIS';
-path_power_sensor = '../results/power/sensor';
 
-if ~exist(path_power_whole)
-    mkdir(path_power_whole)
-end
 if ~exist(path_power_pfc)
     mkdir(path_power_pfc)
 end
@@ -47,9 +42,7 @@ end
 if ~exist(path_power_vis)
     mkdir(path_power_vis)
 end
-if ~exist(path_power_sensor)
-    mkdir(path_power_sensor)
-end
+
 % Define the frequency band of interest
 params.FreqBand.fullSpectrum = [2 40];
 
@@ -115,12 +108,6 @@ parfor iSubj=1:n
     cfg.keeptrials ='no';
     power = ft_freqanalysis(cfg, vdata_trials);
 
-    % Whole-brain
-    freq = power.freq;
-    pow = power.powspctrm;
-    parsave(fullfile(path_power_whole, [bidsID '_whole.mat']),freq,pow)
-%     save(fullfile(path_power_whole, [bidsID '_whole.mat']),'freq','pow');
-
     % Extract power at the PFC
     cfg = [];
     cfg.channel = find(PFC_mask);
@@ -147,22 +134,6 @@ parfor iSubj=1:n
     pow = power_VIS.powspctrm;
     parsave(fullfile(path_power_vis, [bidsID '_VIS.mat']),freq,pow);
 %     save(fullfile(path_power_vis, [bidsID '_VIS.mat']),'freq','pow');
-
-    % Estimate power spectra at the sensor level
-    cfg = [];
-    cfg.foilim = [1 100];
-    cfg.method = 'mtmfft';
-    cfg.taper = 'dpss';
-    cfg.tapsmofrq = 1;
-    cfg.pad = 5;
-    cfg.padtype = 'zero';
-    cfg.output = 'pow';
-    cfg.keeptrials ='no';
-    power_sensor = ft_freqanalysis(cfg, data);
-    freq = power_sensor.freq;
-    pow = power_sensor.powspctrm;
-    parsave(fullfile(path_power_sensor, [bidsID '_sensor.mat']),freq,pow);
-%     save(fullfile(path_power_sensor, [bidsID '_sensor.mat']),'freq','pow');
     
 end
 
