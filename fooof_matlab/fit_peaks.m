@@ -21,7 +21,7 @@ while lguess <= self.max_n_peaks
     [max_height, max_ind] = max(flat_iter);
     
     % Stop searching for peaks once height drops below height threshold
-    if max_height <= self.peak_threshold * std(flat_iter)
+    if max_height <= self.peak_threshold * std(flat_iter,1)
         lguess = lguess -1;
         break
     end
