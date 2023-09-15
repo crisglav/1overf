@@ -20,9 +20,11 @@ self.ap_percentile_thresh = 0.025;
 
 % Input files
 power_path = '../results/power/PFC/';
+power_path = '../results/power/whole_brain/';
+
 
 % Output files
-fooof_path = '../results/fooof_matlab';
+fooof_path = '../results/fooof_matlab/whole_brain';
 %% Load power data and fooof it
 
 power_files = dir(fullfile(power_path,'*.mat'));

@@ -10,7 +10,7 @@ fooof_path = '../results/fooof/';
 participants_path = '../data/blinded/';
 
 % Analsysis type:
-analysis = 'real'; % 'real'
+analysis = 'real'; % 'blinded' / 'real'
 
 switch analysis
     case 'blinded'
@@ -56,7 +56,6 @@ for iRoi=1:length(rois)
 
     er = nan(1,n);
     r2 = nan(1,n);
-    of = nan(1,n);
     ex = nan(1,n);
 
     % Load fooof parameters
@@ -65,7 +64,6 @@ for iRoi=1:length(rois)
 
         er(iSubj) = error;
         r2(iSubj) = r_squared;
-        of(iSubj) = aperiodic_params(1);
         ex(iSubj) = aperiodic_params(2);
 
         clear error r_squared aperiodic_params gaussian_params peak_params 
@@ -73,7 +71,6 @@ for iRoi=1:length(rois)
     
     errors.(roi) = er;
     r_squareds.(roi) = r2;
-    offsets.(roi) = of;
     exponents.(roi) = ex;
     
 end
@@ -120,12 +117,14 @@ box off
 
 str = {sprintf('BF = %0.3f',bf10),sprintf('p = %0.3f',p)};
 annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on');
+
 % Check age and gender covariates ANCOVA in JASP
 participants_sorted.exp_PFC = exponents.PFC';
-writetable(participants_sorted, fullfile(results_path,'exp_PFC.csv'));
+writetable(participants_sorted, fullfile(results_path,['exp_PFC_' analysis '.csv']));
 
 % Save figure
 exportgraphics(f1,fullfile(results_path,'hypothesis1.jpg'));
+
 %% Hypothesis 2: Changes in mPFC exponent are spatially specific for the PFC
 
 % Ploting
@@ -147,12 +146,12 @@ box off
 set(ax,'YTickLabel',flip(rois));
 xlabel('Exponents');
 title('Aperiodic exponents - ROIs')
-% Do statistics in JASP
 
+% Do statistics in JASP
 participants_sorted.exp_PFC = exponents.PFC';
 participants_sorted.exp_S1 = exponents.S1';
 participants_sorted.exp_VIS = exponents.VIS';
-writetable(participants_sorted, fullfile(results_path,'exponents_rand.csv'));
+writetable(participants_sorted, fullfile(results_path,['exp_allROIs_' analysis '.csv']));
 
 % Save figure
 exportgraphics(f2,fullfile(results_path,'hypothesis2.jpg'));
@@ -178,6 +177,7 @@ all(ismember(participants_sorted(mask,:).participant_id,patients_sorted.particip
 
 % Extract fooof values for the patients
 exp_pa = exponents.PFC(mask);
+patients_sorted.exp_PFC = exp_pa';
 
 % Plotting
 f3 = figure();
@@ -195,7 +195,9 @@ exp_pa = exp_pa(~isnan(patients_sorted.avg_pain))';
 str = {sprintf('BF = %0.3f',bf10),sprintf('r = %0.3f',r),sprintf('p = %0.3f',p)};
 annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on','BackgroundColor','w');
 
+% Save to JASP
+writetable(patients_sorted, fullfile(results_path,['patients_PFC_' analysis '.csv']));
+
 % Save figure
 exportgraphics(f3,fullfile(results_path,'hypothesis3.jpg'));
-
 
