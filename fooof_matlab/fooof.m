@@ -15,15 +15,28 @@ classdef fooof
     
     methods
         % constructor
-        function fm = fooof(freq_range,peak_width_limits,max_n_peaks,min_peak_height,peak_threshold)
+        function fm = fooof(varargin)
             if nargin > 0
-                fm.freq_range = freq_range;
-                fm.peak_width_limits = peak_width_limits;
-                fm.max_n_peaks = max_n_peaks;
-                fm.min_peak_height = min_peak_height;
-                fm.peak_threshold = peak_threshold;
+                p = inputParser;
+                addParameter(p,'freq_range',[2, 40],@(x)validateattributes(x,{'numeric'},{'numel',2}));
+                addParameter(p,'peak_width_limits',[0.5, 12],@(x)validateattributes(x,{'numeric'},{'numel',2}));
+                addParameter(p,'max_n_peaks',inf,@(x)validateattributes(x,{'numeric'},{'scalar'}));
+                addParameter(p,'min_peak_height',0,@(x)validateattributes(x,{'numeric'},{'scalar'}));
+                addParameter(p,'peak_threshold',2,@(x)validateattributes(x,{'numeric'},{'scalar'}));
+                addParameter(p,'aperiodic_mode','fixed', @(x) any(validatestring(x,{'fixed','knee'})));
+
+                parse(p,varargin{:})
+                
+                fm.freq_range = p.Results.freq_range;
+                fm.peak_width_limits = p.Results.peak_width_limits;
+                fm.max_n_peaks = p.Results.max_n_peaks;
+                fm.min_peak_height = p.Results.min_peak_height;
+                fm.peak_threshold = p.Results.peak_threshold;
             end
         end
         
     end
+    
+    
+    
 end
