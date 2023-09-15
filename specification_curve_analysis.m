@@ -90,18 +90,11 @@ nSubj = height(participants);
 %%
 % Loop over specifications
 for iSpec=1:nSpec
-    
-    % Decode the specifications
-    
+       
     % S1. Frequency range
     freq_range = strsplit(s.freq_range{iSpec},'-');
     freq_range = cellfun(@str2num,freq_range);
     params.FreqBand.fullSpectrum = freq_range;  
-
-    
-    
-    
-    
     
     % Loop over subjects
     for iSubj=1:nSubj
@@ -151,23 +144,24 @@ for iSpec=1:nSpec
           
         % ----- Model power spectrum with FOOOF ------
         % Create a fooof object with default settings
-        % S5. frequency range fooof
         % S5. Knee parameter
-        fm = fooof();
+        switch('fooof_knee')
+            case 'no'
+                fm = fooof('freq_range',freq_range);
+            case 'yes'
+                fm = fooof('freq_range',freq_range,'aperiodic_mode','knee');
+        end
         % Add original freq and power spectrum to the fooof model
         fm.orig_freq = power_PFC.freq;
         fm.orig_pow = power_PFC.powspctrm;
         
         % Select a subset of frequencies defined in freq_range and transform power to log space
         f = and(freq >= fm.freq_range(1),freq<=fm.freq_range(2));
-        self.freq = freq_orig(f);
-        self.pow = log10(pow_orig(f));
+        fm.freq = freq_orig(f);
+        fm.pow = log10(pow_orig(f));
 
         % Fit fooof
-        self = fit_fooof(self);
-
-
-
+        fm = fit_fooof(fm);
     end
 
 

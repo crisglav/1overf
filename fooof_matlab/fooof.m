@@ -15,7 +15,7 @@ classdef fooof
     
     methods
         % constructor
-        function fm = fooof(varargin)
+        function self = fooof(varargin)
             if nargin > 0
                 p = inputParser;
                 addParameter(p,'freq_range',[2, 40],@(x)validateattributes(x,{'numeric'},{'numel',2}));
@@ -27,12 +27,22 @@ classdef fooof
 
                 parse(p,varargin{:})
                 
-                fm.freq_range = p.Results.freq_range;
-                fm.peak_width_limits = p.Results.peak_width_limits;
-                fm.max_n_peaks = p.Results.max_n_peaks;
-                fm.min_peak_height = p.Results.min_peak_height;
-                fm.peak_threshold = p.Results.peak_threshold;
+                self.freq_range = p.Results.freq_range;
+                self.peak_width_limits = p.Results.peak_width_limits;
+                self.max_n_peaks = p.Results.max_n_peaks;
+                self.min_peak_height = p.Results.min_peak_height;
+                self.peak_threshold = p.Results.peak_threshold;
             end
+        end
+        
+        function self = add_data(self,freq,pow,varargin)
+            % Add data to fooof model. Powspectrum must be in linear scale.
+            p = inputParser;
+            addRequired(p,'freq',@(x)validateattributes(x,{'numeric'},{'vector'}));
+            addRequired(p,'pow',@(x)validateattributes(x,{'numeric'},{'vector'}));
+
+            parse(p,varargin{:})
+            
         end
         
     end
