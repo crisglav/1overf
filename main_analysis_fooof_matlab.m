@@ -61,9 +61,9 @@ for iRoi=1:length(rois)
     for iSubj=1:n
         load(fullfile(roi_files(iSubj).folder,roi_files(iSubj).name));
 
-        er(iSubj) = self.error_mae;
-        r2(iSubj) = self.r2;
-        ex(iSubj) = self.aperiodic_params(2);
+        er(iSubj) = fm.error_mae;
+        r2(iSubj) = fm.r2;
+        ex(iSubj) = fm.aperiodic_params(2);
 
         clear error r_squared aperiodic_params gaussian_params peak_params 
     end

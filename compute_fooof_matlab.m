@@ -11,10 +11,10 @@ addpath('fooof_matlab');
 
 % Input files
 power_path = '../results/power/PFC/';
-% power_path = '../results/power/whole_brain/';
 
 % Output files
 fooof_path = '../results/fooof_matlab/PFC';
+
 %% Load power data and fooof it
 power_files = dir(fullfile(power_path,'*.mat'));
 

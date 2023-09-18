@@ -77,7 +77,7 @@ participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'F
 task = 'closed';
 n = height(participants);
 
-%% 
+ 
 % parpool(10);
 participant_id = participants.participant_id;
 parfor iSubj=1:n
