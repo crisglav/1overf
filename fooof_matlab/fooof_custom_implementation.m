@@ -26,17 +26,19 @@ load(fullfile(file.folder,file.name));
 
 % Average across channels
 avgpow = mean(pow,1);
-pow_orig = avgpow;
-freq_orig = freq;
 
-f = and(freq >= self.freq_range(1),freq<=self.freq_range(2));
-freq = freq_orig(f);
-pow = pow_orig(f);
-pow = log10(pow);
-
-% Add data to the configuration settings
-self.freq = freq;
-self.pow = pow;
+%%
+% pow_orig = avgpow;
+% freq_orig = freq;
+% 
+% f = and(freq >= self.freq_range(1),freq<=self.freq_range(2));
+% freq = freq_orig(f);
+% pow = pow_orig(f);
+% pow = log10(pow);
+% 
+% % Add data to the configuration settings
+% self.freq = freq;
+% self.pow = pow;
 
 %% Fit fooof
 self = fit_fooof(self);
@@ -179,6 +181,23 @@ plot(self.freq,self.ap_fit,'--b')
 hold on
 plot(self.freq,self.fooofed_spectrum,'r');
 legend ({'Original spectrum','Full model fit','Aperiodic fit'});
+xlabel('Frequency');
+ylabel('logPower');
+title('Assess goodness of fit');
+
+%% OOP
+fm = fooof();
+fm = add_data(fm,freq,avgpow,[2 40]);
+fm = fit(fm);
+
+% Plot
+figure
+plot(fm.freqs,fm.power_spectrum,'k');
+hold on
+plot(fm.freqs,fm.ap_fit,'--b')
+hold on
+plot(fm.freqs,fm.fooofed_spectrum,'r');
+legend ({'Original spectrum','Aperiodic fit','Full model fit'});
 xlabel('Frequency');
 ylabel('logPower');
 title('Assess goodness of fit');

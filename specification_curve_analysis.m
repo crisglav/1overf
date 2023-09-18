@@ -63,7 +63,6 @@ if ~exist(path_power_vis)
     mkdir(path_power_vis)
 end
 
-
 % Parcellation based on Schaefer atlas and source model
 atlas_table = readtable(params.AtlasPath);
 parcellation.pos = [atlas_table.R, atlas_table.A, atlas_table.S];
@@ -87,8 +86,8 @@ participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'F
 participant_id = participants.participant_id;
 task = 'closed';
 nSubj = height(participants);
-%%
-% Loop over specifications
+
+%% Loop over all specifications
 for iSpec=1:nSpec
        
     % S1. Frequency range
@@ -135,7 +134,7 @@ for iSpec=1:nSpec
         cfg.keeptrials ='no';
         power = ft_freqanalysis(cfg, vdata_trials);
 
-        % ----- Extract power at the PFC ------
+        % ----- Extract power at the PFC -----
         cfg = [];
         cfg.channel = find(PFC_mask);
         % S4. Average PSD over channels
@@ -143,7 +142,7 @@ for iSpec=1:nSpec
         power_PFC = ft_selectdata(cfg,power);
           
         % ----- Model power spectrum with FOOOF ------
-        % Create a fooof object with default settings
+        % Initialize a fooof object with settings depending on the specification
         % S5. Knee parameter
         switch('fooof_knee')
             case 'no'
@@ -151,19 +150,10 @@ for iSpec=1:nSpec
             case 'yes'
                 fm = fooof('freq_range',freq_range,'aperiodic_mode','knee');
         end
-        % Add original freq and power spectrum to the fooof model
-        fm.orig_freq = power_PFC.freq;
-        fm.orig_pow = power_PFC.powspctrm;
-        
-        % Select a subset of frequencies defined in freq_range and transform power to log space
-        f = and(freq >= fm.freq_range(1),freq<=fm.freq_range(2));
-        fm.freq = freq_orig(f);
-        fm.pow = log10(pow_orig(f));
-
+        % Add data in freq_range to the fooof model
+        fm = fm.add_data(power_PFC.freq,power_PFC.powspctrm,freq_range);       
         % Fit fooof
         fm = fit_fooof(fm);
     end
 
-
-    
 end
