@@ -5,81 +5,57 @@
 clear all, close all;
 
 %% Generate all the specifications
-freq_range = {'2-40', '1-100', '30-45'};
 taper = {'hanning', 'dpss'};
-zero_padding =  {'0', '5', '10'};
+zero_padding =  {'0', '5'}; % Optional include 10
 average_psd = {'no', 'yes'};
+fooof_range = {'2-40', '1-100', '40-60'};
 fooof_knee =  {'no', 'yes'};
 
-[a,b,c,d,e] = ndgrid(freq_range,taper,zero_padding,average_psd,fooof_knee);
+[a,b,c,d,e] = ndgrid(taper,zero_padding,average_psd,fooof_range,fooof_knee);
 nSpec = length(a(:));
 specs_id = num2cell(1:nSpec);
 specs = [specs_id',a(:),b(:),c(:),d(:),e(:)];
-s = cell2table(specs,'VariableNames',{'spec_id','freq_range','taper','zero_padding','average_psd','fooof_knee'});
+s = cell2table(specs,'VariableNames',{'spec_id','taper','zero_padding','average_psd','fooof_range','fooof_knee'});
 
-
-%% Initialization of paths and other settings
-
-% Import paths
-fid = fopen('paths.json');
-raw = fread(fid,inf);
-str = char(raw');
-fclose(fid);
-paths = jsondecode(str);
-clear fid raw str
-
-% Add functions from the discover-eeg to read preprocessed data
-addpath(genpath(paths.discover_eeg));
-addpath(paths.fieldtrip);
+%% Settings
+% Add fieldtrip
+addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
 ft_defaults;
-% Add matlab FOOOF functions
-addpath('fooof_matlab');
 
 % Load preprocessing parameters
 fparams = '../data/blinded/derivatives_v2023_08_18/params.json';
-fid = fopen(fparams);
-raw = fread(fid,inf);
-str = char(raw');
-fclose(fid);
-params = jsondecode(str);
-clear fid raw str
+params = load_params(fparams);
+
+% Define the atlas for source localization, create ROIs mask and precompute
+% the source model
+params.AtlasPath = 'schaefer_parcellations/Schaefer2018_100Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv';
+params = create_parcellation(params);
+
+% Define the frequency band in which to compute the spatial filter
+params.FreqBand.fullSpectrum = [0.5 100.5];
+
+% Define the number of cores for parallelization
+params.Ncores = 2;
+if(isempty(gcp('nocreate')))
+    parObj = parpool(params.Ncores);
+end
 
 % Define the results path
-params.RawDataPath = '../data/blinded';
-params.PreprocessedDataPath = '../data/blinded/derivatives_v2023_08_18';
-params.AtlasPath = 'schaefer_parcellations/Schaefer2018_100Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv';
-params.SourcePath = '../results/source';
-path_power_pfc = '../results/power/PFC';
-path_power_s1 = '../results/power/S1';
-path_power_vis = '../results/power/VIS';
-
-if ~exist(path_power_pfc)
-    mkdir(path_power_pfc)
+params.VdataPath = '../results/vdata';
+if ~exist(params.VdataPath)
+    mkdir(params.VdataPath)
 end
-if ~exist(path_power_s1)
-    mkdir(path_power_s1)
+params.PowerPFCPath = '../results/power/PFC';
+if ~exist(params.PowerPFCPath)
+    mkdir(params.PowerPFCPath)
 end
-if ~exist(path_power_vis)
-    mkdir(path_power_vis)
+params.FOOOFPath = '../results/fooof_matlab/PFC';
+if ~exist(params.FOOOFPath)
+    mkdir(params.FOOOFPath)
 end
 
-% Parcellation based on Schaefer atlas and source model
-atlas_table = readtable(params.AtlasPath);
-parcellation.pos = [atlas_table.R, atlas_table.A, atlas_table.S];
-parcellation.unit = 'mm';
-parcellation.coordsys = 'mni';
-parcellation.ROI = atlas_table.ROILabel;
-parcellation.ROIlabel = atlas_table.ROIName;
-PFC_mask = contains(atlas_table.ROIName,{'Cinga','PFCm','PFCmp'});
+%% Initialization of paths and other settings
 
-% Source model: centroid positons from Schaefer atlas
-cfg = [];
-cfg.method = 'basedonpos';
-cfg.sourcemodel.pos = [atlas_table.R, atlas_table.A, atlas_table.S];
-cfg.unit = 'mm';
-cfg.headmodel = params.HeadModelPath;
-sourcemodel_atlas = ft_prepare_sourcemodel(cfg);
-sourcemodel_atlas.coordsys = 'mni';
 
 % Load all subject ids
 participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'Filetype','text');
@@ -89,40 +65,28 @@ nSubj = height(participants);
 
 %% Loop over all specifications
 for iSpec=1:nSpec
-       
-    % S1. Frequency range
-    freq_range = strsplit(s.freq_range{iSpec},'-');
-    freq_range = cellfun(@str2num,freq_range);
-    params.FreqBand.fullSpectrum = freq_range;  
+      
     
     % Loop over subjects
     for iSubj=1:nSubj
 
         bidsID = participant_id{iSubj};
         bidsID = [bidsID '_task-' task];
-
-        % ----- Load EEG preprocessed data -----
-        data = load_preprocessed_data(params,bidsID);
-
-        % ----- Compute source reconstruction ------
-        source = compute_spatial_filter(params,bidsID,'fullSpectrum');
-
-        % ----- Extract virtual channel data -----
-        cfg = [];
-        cfg.parcellation = 'ROI';
-        vdata_trials = ft_virtualchannel(cfg,data,source,parcellation);
+        
+        % ----- Load virtual channel data  ------
+        load(fullfile(params.VdataPath,[bidsID '_vdata.mat']));
 
         % ----- Estimate power spectra at the source level -----
         cfg = [];
         cfg.foilim = [1 100];
         cfg.method = 'mtmfft';
-        % S2. Taper
+        % S1. Taper
         cfg.taper = s.taper{iSpec};   
         switch s.taper{iSpec}
             case 'dpss'
                 cfg.tapsmofrq = 1;
         end
-        % S3. Padding
+        % S2. Padding
         switch s.zero_padding{iSpec}
             case '0'
                 % Do not pad, don't do anything here
@@ -136,24 +100,39 @@ for iSpec=1:nSpec
 
         % ----- Extract power at the PFC -----
         cfg = [];
-        cfg.channel = find(PFC_mask);
-        % S4. Average PSD over channels
-        cfg.avgoverchan = s.average_PSD{iSpec};
+        cfg.channel = find(params.PFC_mask);
+        % S3. Average PSD over channels / exponents
+        cfg.avgoverchan = s.average_psd{iSpec};
         power_PFC = ft_selectdata(cfg,power);
           
         % ----- Model power spectrum with FOOOF ------
         % Initialize a fooof object with settings depending on the specification
+        % S4. Fooof range
         % S5. Knee parameter
-        switch('fooof_knee')
+        fooof_range = strsplit(s.fooof_range{iSpec},'-');
+        fooof_range = cellfun(@str2num,fooof_range);
+        switch (s.fooof_knee{iSpec})
             case 'no'
-                fm = fooof('freq_range',freq_range);
+                fm = fooof('freq_range',fooof_range);
             case 'yes'
-                fm = fooof('freq_range',freq_range,'aperiodic_mode','knee');
+                fm = fooof('freq_range',fooof_range,'aperiodic_mode','knee');
         end
         % Add data in freq_range to the fooof model
-        fm = fm.add_data(power_PFC.freq,power_PFC.powspctrm,freq_range);       
+        fm = fm.add_data(power_PFC.freq,power_PFC.powspctrm,fooof_range); 
+        
+        % FIX = fit data per channel when several channels are input
+
         % Fit fooof
-        fm = fit_fooof(fm);
+        fm = fit(fm);
+        
+        % S3. Average PSD / exponents
+        switch(s.average_psd)
+            case 'no'
+                % Average exponents
+                
+        end
     end
+    
+    % Extract X for all participants
 
 end
