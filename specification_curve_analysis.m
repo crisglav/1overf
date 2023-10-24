@@ -18,67 +18,42 @@ specs = [specs_id',a(:),b(:),c(:),d(:),e(:)];
 s = cell2table(specs,'VariableNames',{'spec_id','taper','zero_padding','average_psd','fooof_range','fooof_knee'});
 
 %% Settings
-% Add fieldtrip
+% Define the number of cores for parallelization
+% params.Ncores = 2;
+% if(isempty(gcp('nocreate')))
+%     parObj = parpool(params.Ncores);
+% end
+
+% Add fieldtrip and analysis functions
 addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
 ft_defaults;
+addpath('analysis_functions');
+addpath('fooof_matlab');
+load('params.mat');
 
-% Load preprocessing parameters
-fparams = '../data/blinded/derivatives_v2023_08_18/params.json';
-params = load_params(fparams);
-
-% Define the atlas for source localization, create ROIs mask and precompute
-% the source model
-params.AtlasPath = 'schaefer_parcellations/Schaefer2018_100Parcels_17Networks_order_FSLMNI152_1mm.Centroid_RAS.csv';
-params = create_parcellation(params);
-
-% Define the frequency band in which to compute the spatial filter
-params.FreqBand.fullSpectrum = [0.5 100.5];
-
-% Define the number of cores for parallelization
-params.Ncores = 2;
-if(isempty(gcp('nocreate')))
-    parObj = parpool(params.Ncores);
-end
-
-% Define the results path
-params.VdataPath = '../results/vdata';
-if ~exist(params.VdataPath)
-    mkdir(params.VdataPath)
-end
-params.PowerPFCPath = '../results/power/PFC';
-if ~exist(params.PowerPFCPath)
-    mkdir(params.PowerPFCPath)
-end
-params.FOOOFPath = '../results/fooof_matlab/PFC';
-if ~exist(params.FOOOFPath)
-    mkdir(params.FOOOFPath)
-end
-
-%% Initialization of paths and other settings
-
+%%
 
 % Load all subject ids
 participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'Filetype','text');
 participant_id = participants.participant_id;
-task = 'closed';
 nSubj = height(participants);
 
 %% Loop over all specifications
 for iSpec=1:nSpec
-      
     
     % Loop over subjects
     for iSubj=1:nSubj
 
         bidsID = participant_id{iSubj};
-        bidsID = [bidsID '_task-' task];
+        bidsID = [bidsID '_task-closed'];
         
-        % ----- Load virtual channel data  ------
+        % ----- Load precomputed virtual channel data ------
         load(fullfile(params.VdataPath,[bidsID '_vdata.mat']));
 
-        % ----- Estimate power spectra at the source level -----
+        % ----- Estimate power spectra at the source level in the PFC only -----
         cfg = [];
         cfg.foilim = [1 100];
+        cfg.channel = find(params.PFC_mask);
         cfg.method = 'mtmfft';
         % S1. Taper
         cfg.taper = s.taper{iSpec};   
@@ -98,12 +73,13 @@ for iSpec=1:nSpec
         cfg.keeptrials ='no';
         power = ft_freqanalysis(cfg, vdata_trials);
 
-        % ----- Extract power at the PFC -----
-        cfg = [];
-        cfg.channel = find(params.PFC_mask);
         % S3. Average PSD over channels / exponents
-        cfg.avgoverchan = s.average_psd{iSpec};
-        power_PFC = ft_selectdata(cfg,power);
+        switch s.average_psd{iSpec}
+            case 'yes'
+                pow = mean(power.powspctrm,1);
+            case 'no'
+                pow = power.powspctrm;
+        end
           
         % ----- Model power spectrum with FOOOF ------
         % Initialize a fooof object with settings depending on the specification
@@ -118,7 +94,7 @@ for iSpec=1:nSpec
                 fm = fooof('freq_range',fooof_range,'aperiodic_mode','knee');
         end
         % Add data in freq_range to the fooof model
-        fm = fm.add_data(power_PFC.freq,power_PFC.powspctrm,fooof_range); 
+        fm = fm.add_data(power.freq,pow,fooof_range); 
         
         % FIX = fit data per channel when several channels are input
 
