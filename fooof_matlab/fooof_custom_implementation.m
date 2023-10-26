@@ -5,10 +5,8 @@
 % Cristina Gil Avila, TUM, 01.09.2023
 close all
 clear all
-
-
 %% Loading demo data
-power_path = '../../results/power/PFC/';
+power_path = '../../results/features/power/PFC/';
 power_files = dir(fullfile(power_path,'*.mat'));
 file = power_files(1);
 load(fullfile(file.folder,file.name));

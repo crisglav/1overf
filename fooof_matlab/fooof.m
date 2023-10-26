@@ -26,13 +26,11 @@ classdef fooof
         fooofed_spectrum
         
         % Model parameters
-        aperiodic_params
-        gaussian_params
-        peak_params
-        error_mae
-        error_mse
-        error_rmse
-        r2
+        aperiodic_params    % [Offset, (Knee), Exponent]
+        gaussian_params     % [mean, height, standard deviation]
+        peak_params         % [CF, PW, BW]
+        error               % [mae, mse, rmse]
+        r_squared
         
     end
     
@@ -73,6 +71,17 @@ classdef fooof
         function obj = add_data(obj,freq,pow,varargin)
             % Add data to fooof model. Powspectrum must be in linear scale.                      
             % Trim power spectra if freq range is specified. Otherwise keep all the data
+            
+            % Check data format
+            if size(pow,1) > 1
+                error('fooof class does not support multiple power spectra. Use class fooofGroup');
+            end
+            % TO DO: more checks here
+            % - same length freq and pow
+            % - no inf or nan values
+            % - freq size x,1
+            % - check if values are complex
+            
             obj.freq_orig = freq;
             obj.pow_orig = pow;
             if ~isempty(varargin)
@@ -123,8 +132,8 @@ classdef fooof
             obj.peak_params = create_peak_params(obj,obj.gaussian_params);
             
             % ===== Calculate R^2 and error of the model fit ======
-            obj.r2 = calc_r_squared(obj);
-            [obj.error_mae, obj.error_mse, obj.error_rmse] = calc_error(obj);
+            obj.r_squared = calc_r_squared(obj);
+            obj.error = calc_error(obj);
         end
         
         
@@ -352,17 +361,40 @@ classdef fooof
             end
         end
         
-        function [mae, mse, rmse] = calc_error(obj)
+        function error = calc_error(obj)
             % Mean absolute error
             mae = mean(abs(obj.power_spectrum - obj.fooofed_spectrum));
             % Mean squared error
             mse = mean((obj.power_spectrum - obj.fooofed_spectrum).^2);
             % Root mean squared error
             rmse = sqrt(mean((obj.power_spectrum - obj.fooofed_spectrum).^2));
+            error = [mae, mse, rmse];
         end
         
         function r2 = calc_r_squared(obj)
             r2 = corr(obj.power_spectrum', obj.fooofed_spectrum')^2;
+        end
+        
+        function results = get_results(obj)
+            % Parameters
+            % ----------
+            % aperiodic_params : 1d array
+            %     Parameters that define the aperiodic fit. As [Offset, (Knee), Exponent].
+            %     The knee parameter is only included if aperiodic is fit with knee.
+            % peak_params : 2d array
+            %     Fitted parameter values for the peaks. Each row is a peak, as [CF, PW, BW].
+            % r_squared : float
+            %     R-squared of the fit between the full model fit and the input data.
+            % error : float
+            %     Error of the full model fit as [MAE MSE RMSE]
+            % gaussian_params : 2d array
+            %     Parameters that define the gaussian fit(s).
+            %     Each row is a gaussian, as [mean, height, standard deviation].
+            results.aperiodic_params = obj.aperiodic_params;
+            results.peak_params = obj.peak_params;
+            results.r_squared = obj.r_squared;
+            results.error = obj.error;
+            results.gaussian_params = obj.gaussian_params;       
         end
 
     end
