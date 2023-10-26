@@ -10,7 +10,7 @@ classdef fooofGroup < fooof
             obj@fooof(varargin{:});
         end     
         
-        function obj = add_data(obj,freq,pow,varargin)
+        function obj = add_data(obj,freq,pow)
             % Add data to fooof model. Powspectrum must be in linear scale.                      
             % Trim power spectra if freq range is specified. Otherwise keep all the data
             if size(pow,1) == 1
@@ -18,9 +18,8 @@ classdef fooofGroup < fooof
             end
             obj.freq_orig = freq;
             obj.pow_orig = pow;
-            if ~isempty(varargin)
-                range = varargin{1};
-                mask = and(freq >= range(1),freq<=range(2));
+            if ~isempty(obj.freq_range)
+                mask = and(freq >= obj.freq_range(1),freq<=obj.freq_range(2));
                 obj.freqs = freq(mask);
                 obj.power_spectra = log10(pow(:,mask));
             else

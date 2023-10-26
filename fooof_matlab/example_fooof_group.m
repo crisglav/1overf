@@ -9,7 +9,7 @@ clear all
 %% Load subset data and fooof it
 power_path = '../../results/power/PFC/';
 power_files = dir(fullfile(power_path,'*.mat'));
-subset = power_files(7:12);
+subset = power_files;
 fooof_participants = cell(1,length(subset));
 
 for iFile =1:length(subset)
@@ -20,10 +20,10 @@ for iFile =1:length(subset)
     avgpow = mean(pow,1);
     
     % Initialize a fooof object 
-    fm = fooof();
+    fm = fooof('freq_range',[2 40]);
     
     % Add the data in the frequency range 2 - 40 Hz
-    fm = add_data(fm,freq,avgpow,[2,40]);
+    fm = add_data(fm,freq,avgpow);
     
     % Fit the model
     fm = fit(fm);

@@ -16,13 +16,11 @@ avgpow = mean(pow,1);
 
 %% Fit fooof model
 % Initialize fooof object with some default settings
-fm = fooof();
-
-% Add data to the model in the freq range 2 - 40 Hz
-fm = add_data(fm,freq,avgpow,[2 40]);
-
-% Fit the model
+fm = fooof('freq_range',[2 40],'aperiodic_mode','knee');
+% Add data to the model in the freq range 2 - 40 Hz (pre-specified)
+fm = add_data(fm,freq,avgpow);
 fm = fit(fm);
+fm.get_results()
 
 %% Some plotting
 % Reproducing figures of tutorial 3 of fooof (jupyter notebook)
@@ -140,8 +138,8 @@ legend ({'Original spectrum','Aperiodic fit','Full model fit'});
 xlabel('Frequency');
 ylabel('logPower');
 title('Model fit 2 - 40 Hz');
-str1 = sprintf('r2 = %0.3f ',fm.r2);
-str2 = sprintf('mae = %0.3f',fm.error_mae);
+str1 = sprintf('r2 = %0.3f ',fm.r_squared);
+str2 = sprintf('mae = %0.3f',fm.error(1));
 text(ax,'Units', 'Normalized', 'Position', [0.05, 0.1],'String',{str1,str2});
 
 
@@ -169,5 +167,4 @@ plot(log10(fm.freq_orig),ap_fit_full,'--b')
 legend ({'Original spectrum','Aperiodic fit','Full model fit'});
 xlabel('logFrequency');
 ylabel('logPower');
-str = strsplit(subset(iFile).name,'_');
 title(sprintf('Model %d - %d Hz, fitting 1 - 100 Hz',fm.freq_range(1),fm.freq_range(2)));

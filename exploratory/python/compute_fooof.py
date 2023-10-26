@@ -8,10 +8,10 @@ from fooof import FOOOF
 
 # Data path
 current_file_path = os.path.abspath(os.path.dirname(__file__))
-data_path = os.path.abspath(os.path.join(current_file_path,'../results/power/PFC/'))
+data_path = os.path.abspath(os.path.join(current_file_path,'../../../results/features/power/PFC'))
 # Output paths
-out_path = os.path.abspath(os.path.join(current_file_path,'../results/fooof/'))
-figures_path = os.path.abspath(os.path.join(current_file_path,'../results/fooof/figures'))
+out_path = os.path.abspath(os.path.join(current_file_path,'../../../results/fooof/'))
+figures_path = os.path.abspath(os.path.join(current_file_path,'../../../results/fooof/figures'))
 
 # Frequency range to fit the fooof model
 freq_range = [2, 40]
