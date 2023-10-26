@@ -50,6 +50,7 @@ classdef fooof
             % constructor of fooof object            
             if nargin > 0
                 p = inputParser;
+                % TO DO: Do extra checks to the freq range (freq2 > freq1)
                 addParameter(p,'freq_range',[2, 40],@(x)validateattributes(x,{'numeric'},{'numel',2}));
                 addParameter(p,'peak_width_limits',[0.5, 12],@(x)validateattributes(x,{'numeric'},{'numel',2}));
                 addParameter(p,'max_n_peaks',inf,@(x)validateattributes(x,{'numeric'},{'scalar'}));
@@ -64,31 +65,33 @@ classdef fooof
                 obj.max_n_peaks = p.Results.max_n_peaks;
                 obj.min_peak_height = p.Results.min_peak_height;
                 obj.peak_threshold = p.Results.peak_threshold;
-                obj.ap_percentile_thresh = 0.025;
+                obj.aperiodic_mode = p.Results.aperiodic_mode;
             end
         end
         
-        function obj = add_data(obj,freq,pow,varargin)
+        function obj = add_data(obj,freq,pow)
             % Add data to fooof model. Powspectrum must be in linear scale.                      
-            % Trim power spectra if freq range is specified. Otherwise keep all the data
+            % Trim power spectra if the predefined freq range is not empty. If freq_range is empty keep all the data.
             
             % Check data format
             if size(pow,1) > 1
                 error('fooof class does not support multiple power spectra. Use class fooofGroup');
             end
+            
             % TO DO: more checks here
             % - same length freq and pow
             % - no inf or nan values
-            % - freq size x,1
             % - check if values are complex
+            % - check that freqs has a wider range than obj.freq_range
             
             obj.freq_orig = freq;
             obj.pow_orig = pow;
-            if ~isempty(varargin)
-                range = varargin{1};
-                mask = and(freq >= range(1),freq<=range(2));
+            
+            if ~isempty(obj.freq_range)
+                mask = and(freq >= obj.freq_range(1),freq<=obj.freq_range(2));
                 obj.freqs = freq(mask);
                 obj.power_spectrum = log10(pow(mask));
+                fprintf('Data trimmed in the range %d - %d Hz \n',obj.freq_range)
             else
                 obj.freqs = freq;
                 obj.power_spectrum = log10(pow);
