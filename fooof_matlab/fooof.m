@@ -399,6 +399,53 @@ classdef fooof
             results.error = obj.error;
             results.gaussian_params = obj.gaussian_params;       
         end
+        
+        function fig = plot(obj,varargin)
+        if nargin > 0
+                p = inputParser;
+                % TO DO: Do extra checks to the freq range (freq2 > freq1)
+                addParameter(p,'fig_save',false,@islogical);
+                addParameter(p,'file_name','');
+                addParameter(p,'file_path','');
+                parse(p,varargin{:})
+                
+                fig_save = p.Results.fig_save;
+                file_name = p.Results.file_name;
+                file_path = p.Results.file_path;
+         end    
+            
+            % Overlap the fooofed spectrum to the original spectrum in full frequency range
+            padded_ap_fit = nan(size(obj.freq_orig));
+            fmask = and(obj.freq_orig >= obj.freq_range(1),obj.freq_orig<=obj.freq_range(2));
+            padded_ap_fit(fmask) = obj.ap_fit;
+            padded_fooofed_spectrum = nan(size(obj.freq_orig));
+            padded_fooofed_spectrum(fmask) = obj.fooofed_spectrum;
+            
+            fig = figure('Units','centimeters','Position',[15 10 20 15]);
+            ax = gca;
+            plot(obj.freq_orig,log10(obj.pow_orig),'k');
+            hold on
+            plot(obj.freq_orig,padded_ap_fit,'--b')
+            hold on
+            plot(obj.freq_orig,padded_fooofed_spectrum,'r');
+            legend ({'Original spectrum','Aperiodic fit','Full model fit'});
+            xlabel('Frequency');
+            ylabel('logPower');
+            title(sprintf('Model fit %d - %d Hz',obj.freq_range));
+            str1 = sprintf('r2 = %0.3f ',obj.r_squared);
+            str2 = sprintf('mae = %0.3f',obj.error(1));
+            text('Units', 'Normalized', 'Position', [0.05, 0.1],'String',{str1,str2});
+            
+            if(fig_save)
+                if(isempty(file_name))
+                    error('Specify a valid file_name');
+                end
+                exportgraphics(ax,fullfile(file_path,[file_name '.pdf']));
+            end
+                
+        end
+        
+        
 
     end
 

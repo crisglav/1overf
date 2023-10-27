@@ -21,7 +21,7 @@ fm = fooof('freq_range',[2 40],'aperiodic_mode','knee');
 fm = add_data(fm,freq,avgpow);
 fm = fit(fm);
 fm.get_results()
-
+fm.plot('fig_save',true,'file_name',file.name(1:7));
 %% Some plotting
 % Reproducing figures of tutorial 3 of fooof (jupyter notebook)
 fig2 = figure('Units','centimeters','Position',[15 15 35 35]);

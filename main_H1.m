@@ -12,7 +12,7 @@ close all;
 % end
 
 % Add fieldtrip and analysis functions
-addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
+addpath('C:\Users\Mitarbeiter\fieldtrip');
 ft_defaults;
 addpath('analysis_functions');
 addpath('fooof_matlab');
@@ -53,14 +53,16 @@ participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'F
 participant_id = participants.participant_id;
 n = height(participants);
 
-parfor iSubj=1:n
+for iSubj=1:n
     
     bidsID = participant_id{iSubj};
     bidsID = [bidsID '_task-closed'];
-
-    % Load EEG preprocessed data
-    data = load_preprocessed_data(params,bidsID);
-
+    try
+        % Load EEG preprocessed data
+        data = load_preprocessed_data(params,bidsID);
+    catch
+        continue
+    end
     % Compute source reconstruction
     source = compute_spatial_filter(params,data,'fullSpectrum');
     parsave(fullfile(params.SourcePath,[bidsID '_source.mat']),source);
@@ -93,8 +95,8 @@ parfor iSubj=1:n
     avgpow = mean(pow,1);
     
     % Fit a fooof object in the 2 - 40 Hz freq range 
-    fm = fooof();   
-    fm = add_data(fm,freq,avgpow,[2,40]);
+    fm = fooof('freq_range',[2,40],'aperiodic_mode','fixed');   
+    fm = add_data(fm,freq,avgpow);
     fm = fit(fm);
     fname = [bidsID '_PFC_fooofm.mat'];
     parsave(fullfile(params.FOOOFPath,fname),fm);

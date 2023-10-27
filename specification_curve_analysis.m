@@ -16,7 +16,7 @@ nSpec = length(a(:));
 specs_id = num2cell(1:nSpec);
 specs = [specs_id',a(:),b(:),c(:),d(:),e(:)];
 s = cell2table(specs,'VariableNames',{'spec_id','taper','zero_padding','average_psd','fooof_range','fooof_knee'});
-
+clear a b c d e specs_id taper zero_padding average_psd fooof_range fooof_knee
 %% Settings
 % Define the number of cores for parallelization
 % params.Ncores = 2;
@@ -25,11 +25,11 @@ s = cell2table(specs,'VariableNames',{'spec_id','taper','zero_padding','average_
 % end
 
 % Add fieldtrip and analysis functions
-addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
+addpath('C:\Users\Mitarbeiter\fieldtrip');
 ft_defaults;
 addpath('analysis_functions');
 addpath('fooof_matlab');
-load('params.mat');
+load('../results/features/params.mat');
 
 %%
 
@@ -39,8 +39,13 @@ participant_id = participants.participant_id;
 nSubj = height(participants);
 
 %% Loop over all specifications
+% Hardcoded
+participant_id = {'sub-002'};
+nSubj = length(participant_id);
+avg_exp = nan(nSpec,nSubj);
+t01 = tic;
 for iSpec=1:nSpec
-    
+    t1 = tic;
     % Loop over subjects
     for iSubj=1:nSubj
 
@@ -71,44 +76,63 @@ for iSpec=1:nSpec
         end       
         cfg.output = 'pow';
         cfg.keeptrials ='no';
-        power = ft_freqanalysis(cfg, vdata_trials);
-
-        % S3. Average PSD over channels / exponents
-        switch s.average_psd{iSpec}
-            case 'yes'
-                pow = mean(power.powspctrm,1);
-            case 'no'
-                pow = power.powspctrm;
-        end
-          
+        power = ft_freqanalysis(cfg, vdata);
+         
         % ----- Model power spectrum with FOOOF ------
         % Initialize a fooof object with settings depending on the specification
-        % S4. Fooof range
-        % S5. Knee parameter
         fooof_range = strsplit(s.fooof_range{iSpec},'-');
         fooof_range = cellfun(@str2num,fooof_range);
-        switch (s.fooof_knee{iSpec})
-            case 'no'
-                fm = fooof('freq_range',fooof_range);
-            case 'yes'
-                fm = fooof('freq_range',fooof_range,'aperiodic_mode','knee');
-        end
-        % Add data in freq_range to the fooof model
-        fm = fm.add_data(power.freq,pow,fooof_range); 
         
-        % FIX = fit data per channel when several channels are input
-
+        switch s.average_psd{iSpec}
+            % S3. Average PSD over channels
+            case 'yes'
+                pow = mean(power.powspctrm,1);
+                
+                % Initialize a fooof object handling one channel
+                % S4. Fooof range
+                % S5. Knee parameter
+                switch (s.fooof_knee{iSpec})
+                    case 'no'
+                        fm = fooof('freq_range',fooof_range);
+                    case 'yes'
+                        fm = fooof('freq_range',fooof_range,'aperiodic_mode','knee');
+                end
+            % S3. Average aperiodic exponents    
+            case 'no'
+                pow = power.powspctrm;
+                
+                % Initialize a fooof object handling several channels
+                % S4. Fooof range
+                % S5. Knee parameter
+                switch (s.fooof_knee{iSpec})
+                    case 'no'
+                        fm = fooofGroup('freq_range',fooof_range);
+                    case 'yes'
+                        fm = fooofGroup('freq_range',fooof_range,'aperiodic_mode','knee');
+                end
+        end
+        
+        % Add data to the fooof model (in the predefined freq-range)
+        fm = fm.add_data(power.freq,pow); 
         % Fit fooof
         fm = fit(fm);
         
         % S3. Average PSD / exponents
-        switch(s.average_psd)
+        switch s.average_psd{iSpec}
+            case 'yes'
+                avg_exp(iSpec,iSubj) = fm.aperiodic_params(end);
             case 'no'
                 % Average exponents
-                
+                exps = cellfun(@(x) x.aperiodic_params(end), fm.group_results);
+                avg_exp(iSpec,iSubj) = mean(exps);                
         end
+        % Plot power spectrum
+        plot_fm_specs(fm,specs(iSpec,:),'fig_save',true,'file_name',[bidsID '_spec'],'file_path','C:\Users\Mitarbeiter\1overf\results\figures');
     end
     
-    % Extract X for all participants
+    t2 = toc(t1);
+    fprintf('Specification %d took %.2f seconds \n',[iSpec t2]);
 
 end
+t02 = toc(t01);
+fprintf('The analysis took %.2f seconds \n',t02);
