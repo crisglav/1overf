@@ -16,6 +16,7 @@ nSpec = length(a(:));
 specs_id = num2cell(1:nSpec);
 specs = [specs_id',a(:),b(:),c(:),d(:),e(:)];
 s = cell2table(specs,'VariableNames',{'spec_id','taper','zero_padding','average_psd','fooof_range','fooof_knee'});
+orig_spec = 8; % Hard coded. This is the specification of the analysis in the pre-registration
 clear a b c d e specs_id taper zero_padding average_psd fooof_range fooof_knee
 %% Settings
 % Define the number of cores for parallelization
@@ -30,19 +31,22 @@ ft_defaults;
 addpath('analysis_functions');
 addpath('fooof_matlab');
 load('../results/features/params.mat');
+figure_path ='../results/figures/';
+%% Load subject ids
+% participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'Filetype','text');
+% participant_id = participants.participant_id;
+% nSubj = height(participants);
 
-%%
-
-% Load all subject ids
-participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'Filetype','text');
-participant_id = participants.participant_id;
-nSubj = height(participants);
-
-%% Loop over all specifications
 % Hardcoded
-participant_id = {'sub-002'};
+participant_id = {'sub-001','sub-002'};
 nSubj = length(participant_id);
-avg_exp = nan(nSpec,nSubj);
+%% Loop over all specifications
+exp = nan(nSpec,nSubj);
+r_squared = nan(nSpec,nSubj);
+mae = nan(nSpec,nSubj);
+
+fig = figure;
+ax = get(fig,'currentAxes');
 t01 = tic;
 for iSpec=1:nSpec
     t1 = tic;
@@ -120,19 +124,46 @@ for iSpec=1:nSpec
         % S3. Average PSD / exponents
         switch s.average_psd{iSpec}
             case 'yes'
-                avg_exp(iSpec,iSubj) = fm.aperiodic_params(end);
+                exp(iSpec,iSubj) = fm.aperiodic_params(end);
             case 'no'
                 % Average exponents
                 exps = cellfun(@(x) x.aperiodic_params(end), fm.group_results);
-                avg_exp(iSpec,iSubj) = mean(exps);                
+                exp(iSpec,iSubj) = mean(exps);                
         end
+        
+        % Extract error
+        if isprop(fm,'group_results')
+            r_squared(iSpec,iSubj) = median(cellfun(@(x) x.r_squared, fm.group_results));
+            mae(iSpec,iSubj) = median(cellfun(@(x) x.error(1), fm.group_results));
+        else
+            r_squared(iSpec,iSubj) = fm.r_squared;
+            mae(iSpec,iSubj) = fm.error(1);
+        end
+
         % Plot power spectrum
-        plot_fm_specs(fm,specs(iSpec,:),'fig_save',true,'file_name',[bidsID '_spec'],'file_path','C:\Users\Mitarbeiter\1overf\results\figures');
+        plot_fm_specs(fm,specs(iSpec,:),'loglog',true,'fig_save',true,'file_name',[bidsID '_spec'],'file_path',figure_path);
+        close;
     end
     
     t2 = toc(t1);
     fprintf('Specification %d took %.2f seconds \n',[iSpec t2]);
-
+    
 end
 t02 = toc(t01);
 fprintf('The analysis took %.2f seconds \n',t02);
+
+%% Plot all exponents gathered from all the specifications for one subject
+c = lines(2);
+figure();
+scatter(1:nSpec,exp(:,1)',20,c(1,:));
+hold on,
+scatter(orig_spec,exp(orig_spec,1),20,'k','filled');
+hold on,
+plot(1:nSpec,r_squared(:,1),'Color',c(1,:))
+hold on,
+% Subject 2
+scatter(1:nSpec,exp(:,2)',20,c(2,:));
+hold on,
+scatter(orig_spec,exp(orig_spec,2),20,'k','filled');
+hold on,
+plot(1:nSpec,r_squared(:,2),'Color',c(2,:))
