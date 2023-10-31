@@ -1,9 +1,9 @@
 function fig = plot_fm_specs(fm,spec,varargin)
 spec_id = spec.spec_id;
-taper = spec.taper;
-padding = spec.zero_padding;
-fooof_range = spec.fooof_range;
-fooof_knee = spec.knee;
+taper = spec.taper{:};
+padding = spec.zero_padding{:};
+fooof_range = spec.fooof_range{:};
+fooof_knee = spec.fooof_knee{:};
 if nargin > 0
     p = inputParser;
     % TO DO: Do extra checks to the freq range (freq2 > freq1)
