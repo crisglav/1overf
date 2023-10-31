@@ -2,7 +2,7 @@
 clear all, close all
 
 % Add statisical functions and plotting functions
-run('bayes_factor/installBayesFactor.m')
+run('../toolboxes/bayes_factor/installBayesFactor.m')
 addpath('raincloudplots');
 % Paths
 results_path = '../results/jasp';

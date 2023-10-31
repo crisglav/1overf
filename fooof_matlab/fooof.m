@@ -222,7 +222,7 @@ classdef fooof
                     break
                 end
                 
-                % set the guess parameters for gaussian fitting, pecifying the mean and
+                % set the guess parameters for gaussian fitting, specifying the mean and
                 % height
                 guess_freq = obj.freqs(max_ind);
                 guess_height = max_height;
