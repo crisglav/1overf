@@ -199,7 +199,8 @@ classdef fooof
                     hi_bound = [inf, inf];
             end
             aperiodic_params = lsqcurvefit(@exp_function,guess,freqs_ignore',spectrum_ignore',lo_bound,hi_bound,options);
-            
+            % The fitting can sometimes return aperiodic params in form of a complex number with imaginary part equal to zero
+            aperiodic_params = real(aperiodic_params);
         end
         
         function gaussian_params = fit_peaks(obj,flat_iter)
@@ -237,7 +238,7 @@ classdef fooof
                 % Find half heiht index on each side of the center frequency
                 half_height = 0.5 * max_height;
                 
-                le_ind = find(flat_iter(1:max_ind) <= half_height,1,'last');
+                le_ind = find(flat_iter(2:max_ind) <= half_height,1,'last'); % in the python implementation it goes up to the second position of flat_iter
                 ri_ind = max_ind + find(flat_iter(max_ind:end) <= half_height,1) -1;
                 if isempty(le_ind), le_ind = nan; end
                 if isempty(ri_ind), ri_ind = nan; end
