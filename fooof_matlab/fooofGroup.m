@@ -26,8 +26,13 @@ classdef fooofGroup < fooof
                 obj.freqs = freq;
                 obj.power_spectra = log10(pow);
             end
-            obj.freq_res = freq(2) - freq(1);
+            obj.freq_res = freq(2) - freq(1);            
+            if obj.freq_res <= obj.peak_width_limits(1)
+                str = sprintf('Lower bound peak width limit is < or = the frequency resolution: %.2f <= %.2f. Too low a limit may lead to overfitting noise. We recommend a lower bound of approximately twice the frequency resolution.',obj.freq_res, obj.peak_width_limits(1));
+                warning(str);
+            end
             obj.group_results = cell(1,size(obj.power_spectra,1));
+
 
         end
         

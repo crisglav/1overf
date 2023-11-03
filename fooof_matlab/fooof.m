@@ -97,6 +97,10 @@ classdef fooof
                 obj.power_spectrum = log10(pow);
             end
             obj.freq_res = freq(2) - freq(1);
+            if obj.freq_res <= obj.peak_width_limits(1)
+                str = sprintf('Lower bound peak width limit is < or = the frequency resolution: %.2f <= %.2f. Too low a limit may lead to overfitting noise. We recommend a lower bound of approximately twice the frequency resolution.',obj.freq_res, obj.peak_width_limits(1));
+                warning(str);
+            end
 
         end
         
@@ -165,7 +169,16 @@ classdef fooof
             % Fitting
             aperiodic_params = lsqcurvefit(@exp_function,guess,freq',pow',lo_bound,hi_bound,options);
             % The fitting can sometimes return aperiodic params in form of a complex number with imaginary part equal to zero
-            aperiodic_params = real(aperiodic_params);
+            if ~isreal(aperiodic_params)
+                % Check whether the imaginary part is zero with certain tolerance
+                tol = 0.0001;
+                if(all(imag(aperiodic_params)<tol)) % Assume that the imaginary parts are zero and cast to real
+                    aperiodic_params = real(aperiodic_params);
+                else
+                    warning('The simple aperiodic fitting returned imaginary numbers. Using only the real part.')
+                    aperiodic_params = real(aperiodic_params);
+                end
+            end
         end
 
         function aperiodic_params = robust_ap_fit(obj,freq,pow)
@@ -200,7 +213,17 @@ classdef fooof
             end
             aperiodic_params = lsqcurvefit(@exp_function,guess,freqs_ignore',spectrum_ignore',lo_bound,hi_bound,options);
             % The fitting can sometimes return aperiodic params in form of a complex number with imaginary part equal to zero
-            aperiodic_params = real(aperiodic_params);
+            % The fitting can sometimes return aperiodic params in form of a complex number with imaginary part equal to zero
+            if ~isreal(aperiodic_params)
+                % Check whether the imaginary part is zero with certain tolerance
+                tol = 0.0001;
+                if(all(imag(aperiodic_params)<tol)) % Assume that the imaginary parts are zero and cast to real
+                    aperiodic_params = real(aperiodic_params);
+                else
+                    warning('The simple aperiodic fitting returned imaginary numbers. Using only the real part.')
+                    aperiodic_params = real(aperiodic_params);
+                end
+            end
         end
         
         function gaussian_params = fit_peaks(obj,flat_iter)
