@@ -213,15 +213,13 @@ classdef fooof
             end
             aperiodic_params = lsqcurvefit(@exp_function,guess,freqs_ignore',spectrum_ignore',lo_bound,hi_bound,options);
             % The fitting can sometimes return aperiodic params in form of a complex number with imaginary part equal to zero
-            % The fitting can sometimes return aperiodic params in form of a complex number with imaginary part equal to zero
             if ~isreal(aperiodic_params)
                 % Check whether the imaginary part is zero with certain tolerance
                 tol = 0.0001;
                 if(all(imag(aperiodic_params)<tol)) % Assume that the imaginary parts are zero and cast to real
                     aperiodic_params = real(aperiodic_params);
                 else
-                    warning('The simple aperiodic fitting returned imaginary numbers. Using only the real part.')
-                    aperiodic_params = real(aperiodic_params);
+                    error('The simple aperiodic fitting returned imaginary numbers.')
                 end
             end
         end
