@@ -225,18 +225,3 @@ results.ci_inf = ci_inf;
 results.ci_sup = ci_sup;
 writetable(results,fullfile(results_path,'specs_bf.txt'),'Delimiter',',');
 save(fullfile(results_path,'specs_ap_exp.m'),'exp','r_squared','mae');
-%% Plot all exponents gathered from all the specifications for one subject
-% c = lines(2);
-% figure();
-% scatter(1:nSpec,exp(:,1)',20,c(1,:));
-% hold on,
-% scatter(orig_spec,exp(orig_spec,1),20,'k','filled');
-% hold on,
-% plot(1:nSpec,r_squared(:,1),'Color',c(1,:))
-% hold on,
-% Subject 2
-% scatter(1:nSpec,exp(:,2)',20,c(2,:));
-% hold on,
-% scatter(orig_spec,exp(orig_spec,2),20,'k','filled');
-% hold on,
-% plot(1:nSpec,r_squared(:,2),'Color',c(2,:))
