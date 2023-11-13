@@ -12,7 +12,7 @@ close all;
 % end
 
 % Add fieldtrip and analysis functions
-addpath('C:\Users\Mitarbeiter\fieldtrip');
+addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
 ft_defaults;
 addpath('analysis_functions');
 addpath('fooof_matlab');
