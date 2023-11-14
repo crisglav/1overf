@@ -16,11 +16,19 @@ load('../results/features/params.mat');
 figures_path ='../results/figures/';
 results_path = '../results/sca/';
 
+<<<<<<< HEAD
 % % Define the number of cores for parallelization
 % params.Ncores = 15;
 % if(isempty(gcp('nocreate')))
 %     parObj = parpool(params.Ncores);
 % end
+=======
+% Define the number of cores for parallelization
+params.Ncores = 30;
+if(isempty(gcp('nocreate')))
+    parObj = parpool(params.Ncores);
+end
+>>>>>>> b9d25dc668885c62f843f5fe2dc60be6d9ef462d
 %% Generate all the specifications
 if(~exist(fullfile(results_path,'specifications.txt'),'file'))
     taper = {'hanning', 'dpss'};
@@ -93,7 +101,7 @@ for iSpec=1:nSpec
     fooof_knee = s.fooof_knee{iSpec};
     
     % Loop over subjects
-    for iSubj=1:nSubj
+    parfor iSubj=1:nSubj
 
         bidsID = participant_id{iSubj};
         bidsID = [bidsID '_task-closed'];
@@ -161,7 +169,11 @@ for iSpec=1:nSpec
         % Add data to the fooof model (in the predefined freq-range)
         fm = fm.add_data(power.freq,pow); 
         % Fit fooof
-        fm = fit(fm);
+        try
+            fm = fit(fm);
+        catch
+            continue;
+        end
         
         % S3. Average PSD / exponents
         switch average_psd
@@ -221,18 +233,3 @@ results.ci_inf = ci_inf;
 results.ci_sup = ci_sup;
 writetable(results,fullfile(results_path,'specs_bf.txt'),'Delimiter',',');
 save(fullfile(results_path,'specs_ap_exp.m'),'exp','r_squared','mae');
-%% Plot all exponents gathered from all the specifications for one subject
-c = lines(2);
-figure();
-scatter(1:nSpec,exp(:,1)',20,c(1,:));
-hold on,
-scatter(orig_spec,exp(orig_spec,1),20,'k','filled');
-hold on,
-plot(1:nSpec,r_squared(:,1),'Color',c(1,:))
-hold on,
-% Subject 2
-scatter(1:nSpec,exp(:,2)',20,c(2,:));
-hold on,
-scatter(orig_spec,exp(orig_spec,2),20,'k','filled');
-hold on,
-plot(1:nSpec,r_squared(:,2),'Color',c(2,:))
