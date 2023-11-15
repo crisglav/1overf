@@ -47,68 +47,50 @@ for iRand=1:nRand
         sign(iRand) = -1;
     end
 end
+% Flip the curves that do not have the dominant sign. The dominant sign is
+% based on the original curve.
+d_2s = d_rand.*sign*sign_orig;
 
-% PLOT THE MEDIAN CURVES
-medianCurves = prctile(d_rand,50,2)';
-lowPC = prctile(d_rand,2.5,2)';
-highPC = prctile(d_rand,97.2,2)';
-
-% plot
-figure;
-grey = [0.8 0.8 0.8];
-plot(1:nSpec,medianCurves,'Color', grey, 'LineWidth', 1.5), hold on;
-plot(1:nSpec,lowPC, '--', 'Color', grey, 'LineWidth', 1.5), hold on;
-plot(1:nSpec,highPC, '--', 'Color', grey, 'LineWidth', 1.5), hold on;
-
-plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
-ylim([-0.3 0.3]);
-test = yline(0);
-ylabel("Robust Cohen's d");
-xlabel("specifications (nr, sorted by effect size)");
-set(gca, 'TickDir', 'out');
-box off
-xlim([1 nSpec]);
-yticks(-0.3:0.1:0.3);
-
-
+%% INFERENTIAL TESTS
 
 % MEDIAN TEST
-median_d_rand = sort(median(d_rand,1));
+% ===========================================================================
+% Cristina's version
+median_d_rand = sort(median(d_rand));
 tcrit_low = sum(median_d_rand <= prctile(median_d_rand,2.5));
 tcrit_high = sum(median_d_rand <= prctile(median_d_rand,97.5));
 t = min(sum(median(d_orig)<median_d_rand),sum(median(d_orig)>median_d_rand));
-p_median = 2*(t/nRand);
+p_median_cris = 2*(t/nRand);
 test_pos_median = or(t<tcrit_low,t>tcrit_high);
-% test_pos = or(median(d_orig) < prctile(median_d_rand,2.5), median(d_orig) > prctile(median_d_rand,97.5));
 
-% Plot the median ttest
-figure;
-histogram(median_d_rand);
-hold on
-x1 = xline(median(d_orig),'k','LineWidth',2);
-hold on
-x2 = xline(prctile(median_d_rand,2.5),'r');
-hold on
-xline(prctile(median_d_rand,97.5),'r')
-xlabel('Median d')
-ylabel('Randomizations')
-legend([x1, x2],'observed d','critical statistic 2.5%')
-box off;
-title('Median test');
+% Original version
+median_d_rand_2s = sort(median(d_2s)); % For the test data is not sorted (plot 2), but the papers' plot is sorted (plot 6)
+% Proportion of simulations with median value at least as great as observed
+% You have to decide whether to test if the median value is greater as
+% observed or smallar as observed based on the orig_sign. I find completly
+% misleading.
+t = sum(median_d_rand_2s>=median(d_orig));
+p_median = t/nRand;
 
+% Last option, for completeness (Same result as original version)
+median_d_rand_2s_sorted = sort(median(sort(d_2s)));
+t = sum(median_d_rand_2s_sorted>=median(d_orig));
+p_median_sorted = t/nRand;
 
 
 % SHARE OF SIGNIFICANT RESULTS TEST
-% Extract the effects (R) of the 'significant' specifications
+% ===========================================================================
+% Extract the effects (d) of the 'significant' specifications
 significant_d_orig = d_orig(bf_orig>3);
-% Count only the significant specifications have the same sign as the
+% Count only the significant specifications that have the same sign as the
 % dominant curve effect
 if ~isempty(significant_d_orig)
     BF_orig_count = sum((significant_d_orig * sign_orig)>0);
 else
     BF_orig_count = 0;
 end
-% Extract the effects of 'significant' specifications
+% Extract the effects of 'significant' specifications for all
+% randomizations
 significant_d_rand = nan(nSpec,nRand); 
 significant_d_rand(bf_rand>3) = d_rand(bf_rand>3);
 % Count only the significant specifications that have the same sign as the
@@ -137,6 +119,7 @@ title('Share of significant specifications test');
 
 
 % AGGREGATE ALL BF TEST
+% ==========================================================================
 % We have to log(BF) before averaging to account for very small BF
 % indicating strong effect in favor of the null
 avgBF_orig = mean(log(bf_orig));
@@ -156,3 +139,157 @@ xlabel('Average logBF across specifications')
 ylabel('Randomizations')
 legend([x1, x2],'observed avg logBF across specifications','critical statistic 5%')
 title('Aggregated BF test')
+
+
+
+%% PLOT MEDIAN CURVES
+figure;
+grey = [0.8 0.8 0.8];
+
+tiledlayout(3,3)
+
+% ALL THE RANDOMIZED CURVES
+nexttile
+plot(1:nSpec,d_rand), hold on;
+plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+scatter(24,d_orig(24),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+ylabel('d');
+title('All randomizations')
+
+nexttile
+plot(1:nSpec,d_2s), hold on;
+plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+scatter(24,d_orig(24),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+title('All randomizations, flipped sign')
+
+nexttile
+plot(1:nSpec,sort(d_2s)), hold on;
+plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+scatter(24,d_orig(24),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+title('All randomizations, flipped sign, sorted')
+
+% MEDIAN TESTS
+% Plot the median ttest Cristina's verstion
+nexttile
+histogram(median(d_rand),'BinWidth',0.02);
+hold on
+x1 = xline(median(d_orig),'k','LineWidth',2);
+hold on
+x2 = xline(prctile(median(d_rand),2.5),'r');
+hold on
+xline(prctile(median(d_rand),97.5),'r')
+xlabel('Median d')
+legend([x1, x2],'observed d','tcrit 2.5%')
+text(min(xlim), 17, ['p = ' num2str(round(p_median_cris,2))]);
+box off;
+title('Median test');
+
+% Plot the median ttest original version
+nexttile;
+histogram(median(d_2s),'BinWidth',0.02);
+hold on
+x1 = xline(median(d_orig),'k','LineWidth',2);
+hold on
+xline(prctile(median(d_2s),95),'r')
+xlabel('Median d')
+legend([x1, x2],'observed d','tcrit 5%')
+text(min(xlim), 31, ['p = ' num2str(round(p_median,2))]);
+box off;
+title('Median test, flipped');
+
+% For completeness the last option
+nexttile;
+histogram(median(sort(d_2s)),'BinWidth',0.02);
+hold on
+x1 = xline(median(d_orig),'k','LineWidth',2);
+hold on
+xline(prctile(median(sort(d_2s)),95),'r')
+xlabel('Median d')
+legend([x1, x2],'observed d','tcrit 5%')
+text(min(xlim), 31, ['p = ' num2str(round(p_median_sorted,2))]);
+box off;
+title('Median test, flipped, sorted');
+
+
+% PLOT MEDIAN CURVES
+% Original curve with median and prct
+nexttile
+plot(1:nSpec,sort(prctile(d_rand,50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(d_rand,2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(d_rand,97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+scatter(24,d_orig(24),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+
+nexttile
+plot(1:nSpec,sort(prctile(d_2s,50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(d_2s,2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(d_2s,95,2)), 'Color', 'red', 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(d_2s,97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+scatter(24,d_orig(24),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+
+nexttile
+plot(1:nSpec,sort(prctile(sort(d_2s),50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(sort(d_2s),2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(sort(d_2s),95,2)), 'Color', 'red', 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(sort(d_2s),97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+scatter(24,d_orig(24),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+title('Paper plot');
+
+
+% They are the same!!
+% Median value of the 95 percentile across all randomizations
+med_per95 = median(prctile(d_rand,95,2))
+% Percentile 95 of the median across all randomization
+per95_med = prctile(median(d_rand),95)
+
+% They are not the same!!
+% Median value of the 95 percentile across all randomizations
+med_per95 = median(prctile(d_2s,95,2))
+% Percentile 95 of the median across all randomization
+per95_med = prctile(median(d_2s),95)
+
+med_per95 = median(prctile(sort(d_2s),95,2))
+% Percentile 95 of the median across all randomization
+per95_med = prctile(median(sort(d_2s)),95)
+
+median(d_2s) == median(sort(d_2s));
+% But
+prctile(d_2s,95,2) ~= prctile(sort(d_2s),95,2);
+
+median(d_2s,2) ~= median(sort(d_2s),2)
+
+
+% PLOT THE MEDIAN CURVES
+% medianCurves = prctile(d_rand,50,2)';
+% lowPC = prctile(d_rand,2.5,2)';
+% highPC = prctile(d_rand,97.2,2)';
+% figure;
+% grey = [0.8 0.8 0.8];
+% plot(1:nSpec,medianCurves,'Color', grey, 'LineWidth', 1.5), hold on;
+% plot(1:nSpec,lowPC, '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+% plot(1:nSpec,highPC, '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+% plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+% scatter(24,d_orig(24),'black','filled'); hold on;
+% ylim([-0.3 0.3]);
+% test = yline(0);
+% ylabel("Robust Cohen's d");
+% xlabel("specifications (nr, sorted by effect size)");
+% set(gca, 'TickDir', 'out');
+% box off
+% xlim([1 nSpec]);
+% yticks(-0.3:0.1:0.3);
+% title('No sign flipped');

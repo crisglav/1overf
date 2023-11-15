@@ -127,27 +127,99 @@ for i=1:nRand
     BF_rand(:,i) = results.BF10(rowsElec,:);
     
     % Calculate the dominant sign of effects for each randomization
-    pos = sum(R_rand(:,i) > 0);
-    neg = sum(R_rand(:,i) < 0);
-    if pos > neg
+    pos = sum(R_rand(:,i) > 0)/nSpec;
+%     neg = sum(R_rand(:,i) < 0);
+    if pos > 0.5
         sign(i) = 1;
-    elseif neg > pos
+    elseif pos <= 0.5
         sign(i) = -1;
     end
 end
+% The original effect was negative, and we expect to see a negative effect.
+% Reverse the sign of those randomizations where the majority of effects
+% are positive, i.e. reverse the sign of all the randomizations that do not
+% have the dominant sign of the original specification.
+R_2s = R_rand.*sign*sign_orig;
+
+%% Plot curves
+figure;
+grey = [0.8 0.8 0.8];
+
+tiledlayout(2,3)
+
+nexttile
+plot(1:nSpec,R_rand), hold on;
+plot(1:nSpec,R_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+scatter(36,R_orig(36),'black','filled'); hold on;
+yline(0,'LineWidth', 1.5);
+ylim([-0.5,0.5])
+title('All randomizations')
+
+nexttile
+plot(1:nSpec,R_2s), hold on;
+plot(1:nSpec,R_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+scatter(36,R_orig(36),'black','filled'); hold on;
+yline(0,'LineWidth', 1.5);
+ylim([-0.5,0.5])
+title('All randomizations, flipped sign')
+
+nexttile
+plot(1:nSpec,sort(R_2s)), hold on;
+plot(1:nSpec,R_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+scatter(36,R_orig(36),'black','filled'); hold on;
+yline(0,'LineWidth', 1.5);
+ylim([-0.5,0.5])
+title('All randomizations, flipped sign, sorted')
+
+% Original curve with median and prct
+nexttile
+plot(1:nSpec,sort(prctile(R_rand,50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(R_rand,2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(R_rand,97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,R_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+scatter(36,R_orig(36),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+
+nexttile
+plot(1:nSpec,sort(prctile(R_2s,50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(R_2s,2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(R_2s,97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,R_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+scatter(36,R_orig(36),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+
+nexttile
+plot(1:nSpec,sort(prctile(sort(R_2s),50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(sort(R_2s),2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(sort(R_2s),97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,R_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+scatter(36,R_orig(36),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
 
 
+%%
 % MEDIAN TEST
-median_R_rand = sort(median(R_rand,1));
+% Cristina's version
+median_R_rand = sort(median(R_rand));
 tcrit_low = sum(median_R_rand <= prctile(median_R_rand,2.5));
 tcrit_high = sum(median_R_rand <= prctile(median_R_rand,97.5));
 t = min(sum(median(R_orig)<median_R_rand),sum(median(R_orig)>median_R_rand));
-p_median = 2*(t/nRand);
+p_median_cris = 2*(t/nRand);
 test_pos = or(t<tcrit_low,t>tcrit_high);
-% test_pos = or(median(R_orig) < prctile(median_R_rand,2.5), median(R_orig) > prctile(median_R_rand,97.5));
 
-% Plot the median ttest
+% Original version
+median_R_rand_2s = sort(median(R_2s)); % For the test data is not sorted (plot 2), but the papers' plot is sorted (plot 6)
+% Proportion of simulations with median value at least as small as observed
+t = sum(median_R_rand_2s<=median(R_orig));
+p_median = t/nRand;
+
+% Plot the median ttest Cristina's version
 figure;
+tiledlayout(1,3)
+nexttile
 histogram(median_R_rand);
 hold on
 x1 = xline(median(R_orig),'k','LineWidth',2);
@@ -157,9 +229,41 @@ hold on
 xline(prctile(median_R_rand,97.5),'r')
 xlabel('Median R')
 ylabel('Randomizations')
-legend([x1, x2],'observed R','critical statistic 2.5%')
 box off;
+text(min(xlim), max(ylim), ['p = ' num2str(round(p_median_cris,2))], 'Horiz', 'right', 'Vert', 'top', 'LineWidth', 1);
 title('Median test');
+
+% Plot the median ttest original version
+nexttile
+histogram(median_R_rand_2s,'BinWidth',0.02);
+hold on
+x1 = xline(median(R_orig),'k','LineWidth',2);
+hold on
+xline(prctile(median_R_rand_2s,5),'r')
+box off;
+text(min(xlim), -max(ylim), ['p = ' num2str(round(p_median,2))], 'Horiz', 'right', 'Vert', 'top', 'LineWidth', 1);
+title('Median test, flipped sign');
+
+% For completeness plot the third version with sorted values to check that
+% it is something different
+median_R_rand_2s_sorted = sort(median(sort(R_2s))); % For the test data is not sorted (plot 2), but the papers' plot is sorted (plot 6)
+% Proportion of simulations with median value at least as small as observed
+t = sum(median_R_rand_2s_sorted<=median(R_orig));
+p_median_sorted = t/nRand;
+nexttile
+histogram(median_R_rand_2s_sorted,'BinWidth',0.02);
+hold on
+x1 = xline(median(R_orig),'k','LineWidth',2);
+hold on
+xline(prctile(median_R_rand_2s_sorted,5),'r')
+xlabel('Median d')
+ylabel('Randomizations')
+legend([x1, x2],'observed d','critical statistic 5%')
+box off;
+text(min(xlim), max(ylim), ['p = ' num2str(round(p_median_sorted,2))], 'Horiz', 'right', 'Vert', 'top', 'LineWidth', 1);
+title('Median test, flipped sign,sorted');
+
+
 
 
 
