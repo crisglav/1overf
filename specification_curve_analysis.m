@@ -6,7 +6,7 @@ clear all, close all;
 
 % Settings
 % Add fieldtrip and analysis functions
-addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
+addpath('C:\Users\Mitarbeiter\fieldtrip');
 ft_defaults;
 addpath('analysis_functions');
 addpath('fooof_matlab');
@@ -16,11 +16,19 @@ load('../results/features/params.mat');
 figures_path ='../results/figures/';
 results_path = '../results/sca/';
 
+<<<<<<< HEAD
+% % Define the number of cores for parallelization
+% params.Ncores = 15;
+% if(isempty(gcp('nocreate')))
+%     parObj = parpool(params.Ncores);
+% end
+=======
 % Define the number of cores for parallelization
 params.Ncores = 30;
 if(isempty(gcp('nocreate')))
     parObj = parpool(params.Ncores);
 end
+>>>>>>> b9d25dc668885c62f843f5fe2dc60be6d9ef462d
 %% Generate all the specifications
 if(~exist(fullfile(results_path,'specifications.txt'),'file'))
     taper = {'hanning', 'dpss'};
@@ -42,25 +50,25 @@ else
     nSpec = height(s);
 end
 %% Load subject ids
-participants = readtable(fullfile(params.RawDataPath,'participants_clean.tsv'),'Filetype','text');
+% participants = readtable(fullfile(params.RawDataPath,'participants_clean.tsv'),'Filetype','text');
+% 
+% % Order the participants.tsv in descending order by bidsID
+% participants.group = categorical(participants.group);
+% id = cellfun(@(x) str2double(x(5:7)),participants.participant_id,'UniformOutput',false);
+% id = cell2mat(id);
+% [~,ix] = sort(id);
+% participants_sorted = participants(ix,:);
+% 
+% % Separate patients and healthy participants groups
+% pa_mask = participants_sorted.group == 'pa';
+% hc_mask = participants_sorted.group == 'hc';
+% 
+% participant_id = participants_sorted.participant_id;
+% nSubj = height(participants);
 
-% Order the participants.tsv in descending order by bidsID
-participants.group = categorical(participants.group);
-id = cellfun(@(x) str2double(x(5:7)),participants.participant_id,'UniformOutput',false);
-id = cell2mat(id);
-[~,ix] = sort(id);
-participants_sorted = participants(ix,:);
-
-% Separate patients and healthy participants groups
-pa_mask = participants_sorted.group == 'pa';
-hc_mask = participants_sorted.group == 'hc';
-
-participant_id = participants_sorted.participant_id;
-nSubj = height(participants);
-
-% % Hardcoded
-% participant_id = {'sub-001','sub-002'};
-% nSubj = length(participant_id);
+% Hardcoded
+participant_id = {'sub-011'};
+nSubj = length(participant_id);
 
 % Preallocate variables
 exp = nan(nSpec,nSubj);
@@ -187,17 +195,17 @@ for iSpec=1:nSpec
         end
 
 %         % Plot power spectrum
-%         plot_fm_specs(fm,s(iSpec,:),'loglog',false,'fig_save',false,'file_name',[bidsID '_spec'],'file_path',figures_path);
+%         fig = plot_fm_specs(fm,s(iSpec,:),'loglog',false,'fig_save',false,'file_name',[bidsID '_spec'],'file_path',figures_path);
 %         close;
         
     end
     % Statistical test: differences in aperiodic componentbetween groups
-    [bayesfactor(iSpec),p(iSpec)] = bf.ttest2(exp(iSpec,hc_mask),exp(iSpec,pa_mask));
+%     [bayesfactor(iSpec),p(iSpec)] = bf.ttest2(exp(iSpec,hc_mask),exp(iSpec,pa_mask));
     % Effect size (hedge's g and confidence interval (works from ML22a onwards)
-    d = meanEffectSize(exp(iSpec,hc_mask),exp(iSpec,pa_mask),Effect='cohen',ConfidenceIntervalType='bootstrap',NumBootstraps=1000);%    Works in ML2022a onwards
-    effect(iSpec) = d.Effect;
-    ci_inf(iSpec) = d.ConfidenceIntervals(1);
-    ci_sup(iSpec) = d.ConfidenceIntervals(2);
+%     d = meanEffectSize(exp(iSpec,hc_mask),exp(iSpec,pa_mask),Effect='cohen',ConfidenceIntervalType='bootstrap',NumBootstraps=1000);%    Works in ML2022a onwards
+%     effect(iSpec) = d.Effect;
+%     ci_inf(iSpec) = d.ConfidenceIntervals(1);
+%     ci_sup(iSpec) = d.ConfidenceIntervals(2);
 
     % Cohen's d by hand
 %     n1 = sum(hc_mask);
