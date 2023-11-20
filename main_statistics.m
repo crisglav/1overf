@@ -3,11 +3,17 @@ clear all, close all
 
 % Add statisical functions and plotting functions
 run('../toolboxes/bayes_factor/installBayesFactor.m')
-addpath('raincloudplots');
+addpath('../toolboxes/raincloudplots');
+addpath('fooof_matlab');
+
 % Paths
-results_path = '../results/jasp';
-fooof_path = '../results/fooof_matlab/';
 participants_path = '../data/blinded/';
+fooof_path = '../results/features/fooof_matlab/';
+stats_path = '../results/statistics';
+figures_path = '../results/figures';
+if ~exist("stats_path",'dir')
+    mkdir(stats_path)
+end
 
 % Analsysis type:
 analysis = 'real'; % 'blinded' / 'real'
@@ -49,7 +55,7 @@ rois = {'PFC'};
 for iRoi=1:length(rois)
     
     roi = rois{iRoi};
-    roi_path = fullfile(fooof_path,roi);
+    roi_path = fullfile(fooof_path,roi,'2s');
     roi_files = dir(fullfile(roi_path,'*.mat'));
     n = length(roi_files);
 
@@ -61,11 +67,9 @@ for iRoi=1:length(rois)
     for iSubj=1:n
         load(fullfile(roi_files(iSubj).folder,roi_files(iSubj).name));
 
-        er(iSubj) = fm.error_mae;
-        r2(iSubj) = fm.r2;
-        ex(iSubj) = fm.aperiodic_params(2);
-
-        clear error r_squared aperiodic_params gaussian_params peak_params 
+        er(iSubj) = fm.error(1); % mae
+        r2(iSubj) = fm.r_squared;
+        ex(iSubj) = fm.aperiodic_params(end);
     end
     
     errors.(roi) = er;
@@ -119,10 +123,10 @@ annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on');
 
 % Check age and gender covariates ANCOVA in JASP
 participants_sorted.exp_PFC = exponents.PFC';
-% writetable(participants_sorted, fullfile(results_path,['exp_PFC_' analysis '.csv']));
+writetable(participants_sorted, fullfile(stats_path,['exp_PFC_' analysis '.csv']));
 
 % Save figure
-% exportgraphics(f1,fullfile(results_path,'hypothesis1.jpg'));
+exportgraphics(f1,fullfile(figures_path,'hypothesis1.jpg'));
 
 %% Hypothesis 2: Changes in mPFC exponent are spatially specific for the PFC
 
@@ -147,13 +151,13 @@ xlabel('Exponents');
 title('Aperiodic exponents - ROIs')
 
 % Do statistics in JASP
-participants_sorted.exp_PFC = exponents.PFC';
-participants_sorted.exp_S1 = exponents.S1';
-participants_sorted.exp_VIS = exponents.VIS';
+% participants_sorted.exp_PFC = exponents.PFC';
+% participants_sorted.exp_S1 = exponents.S1';
+% participants_sorted.exp_VIS = exponents.VIS';
 % writetable(participants_sorted, fullfile(results_path,['exp_allROIs_' analysis '.csv']));
 
 % Save figure
-% exportgraphics(f2,fullfile(results_path,'hypothesis2.jpg'));
+% exportgraphics(f2,fullfile(figures_path,'hypothesis2.jpg'));
 
 %% Hypothesis 3: Exponents correlate with pain in patients
 
@@ -164,7 +168,7 @@ id = cell2mat(id);
 patients_sorted = patients(ix,:);
 
 % Load PFC fooof files
-pfc_files = dir(fullfile(fooof_path,'PFC','*.mat'));
+pfc_files = dir(fullfile(fooof_path,'PFC','2s','*.mat'));
 % Extracf bids Id from files names
 fooofid = cellfun(@(x) str2double(x(5:7)),{pfc_files.name},'UniformOutput',false);
 fooofid = cell2mat(fooofid);
@@ -195,8 +199,8 @@ str = {sprintf('BF = %0.3f',bf10),sprintf('r = %0.3f',r),sprintf('p = %0.3f',p)}
 annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on','BackgroundColor','w');
 
 % Save to JASP
-% writetable(patients_sorted, fullfile(results_path,['patients_PFC_' analysis '.csv']));
+writetable(patients_sorted, fullfile(stats_path,['patients_PFC_' analysis '.csv']));
 
 % Save figure
-% exportgraphics(f3,fullfile(results_path,'hypothesis3.jpg'));
+exportgraphics(f3,fullfile(figures_path,'hypothesis3.jpg'));
 

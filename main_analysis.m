@@ -6,10 +6,10 @@ clear all,
 close all;
 %% Settings
 % Define the number of cores for parallelization
-% params.Ncores = 2;
-% if(isempty(gcp('nocreate')))
-%     parObj = parpool(params.Ncores);
-% end
+params.Ncores = 15;
+if(isempty(gcp('nocreate')))
+    parObj = parpool(params.Ncores);
+end
 
 % Add fieldtrip and analysis functions
 addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
@@ -30,7 +30,7 @@ params = create_parcellation(params);
 % Define the frequency band in which to compute the spatial filter
 params.FreqBand.fullSpectrum = [0.5 100.5];
 % Define epoch length in seconds
-params.EpochLength = 2;
+params.EpochLength = 5;
 params.EpochOverlap = 0.5;
 
 % Create output folders
@@ -59,7 +59,7 @@ participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'F
 participant_id = participants.participant_id;
 n = height(participants);
 
-for iSubj=1:n
+parfor iSubj=1:n
     
     bidsID = participant_id{iSubj};
     bidsID = [bidsID '_task-closed'];
