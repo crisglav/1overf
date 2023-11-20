@@ -6,7 +6,7 @@
 % Cristina Gil Avila, 08.11.2023
 
 % define and create output folder
-datapath = '/rechenmagd3/Experiments/2023_1overf/results/sca';
+datapath = '/rechenmagd3/Experiments/2023_1overf/results_v2/sca';
 figures_folder = '../results/figures/sca_inference/';
 if ~exist(figures_folder,'dir')
     mkdir(figures_folder);

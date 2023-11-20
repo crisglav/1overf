@@ -1,4 +1,4 @@
-% Estimate the aperiodic component in the PFC of all recordings
+% Estimate the aperiodic component in the PFC
 % 
 % Cristina Gil Avila, TUM, 09.10.2023
 
@@ -18,7 +18,8 @@ addpath('analysis_functions');
 addpath('fooof_matlab');
 
 % Load preprocessing parameters
-fparams = '../data/blinded/derivatives_v2023_08_18/params.json';
+fparams = '../data/blinded/derivatives_v2023_09_28/params.json';
+fparams = '../data/blinded/derivatives_v2023_11_16/params.json';
 params = load_params(fparams);
 
 % Define the atlas for source localization, create ROIs mask and precompute
@@ -28,27 +29,32 @@ params = create_parcellation(params);
 
 % Define the frequency band in which to compute the spatial filter
 params.FreqBand.fullSpectrum = [0.5 100.5];
+% Define epoch length in seconds
+params.EpochLength = 2;
+params.EpochOverlap = 0.5;
 
 % Create output folders
-params.SourcePath = '../results/features/source';
+params.SourcePath = ['../results/features/source/' num2str(params.EpochLength) 's'];
 if ~exist(params.SourcePath)
     mkdir(params.SourcePath)
 end
-params.VdataPath = '../results/features/vdata';
+params.VdataPath = ['../results/features/vdata/' num2str(params.EpochLength) 's'];
 if ~exist(params.VdataPath)
     mkdir(params.VdataPath)
 end
-params.PowerPath = '../results/features/power';
+params.PowerPath = ['../results/features/power/' num2str(params.EpochLength) 's'];
 if ~exist(params.PowerPath)
     mkdir(params.PowerPath)
 end
-params.FOOOFPath = '../results/features/fooof_matlab/PFC';
+params.FOOOFPath = ['../results/features/fooof_matlab/PFC/' num2str(params.EpochLength) 's'];
 if ~exist(params.FOOOFPath)
     mkdir(params.FOOOFPath)
 end
 
-save('../results/features/params.mat','params');
+save(['../results/features/params_' num2str(params.EpochLength) 's.mat'],'params');
 %%
+% Load the tsv in which the participant labels are randomized to be
+% completely agnostic to the groups.
 participants = readtable(fullfile(params.RawDataPath,'participants_rand.tsv'),'Filetype','text');
 participant_id = participants.participant_id;
 n = height(participants);
@@ -63,6 +69,12 @@ for iSubj=1:n
     catch
         continue
     end
+
+    % Cut the data into epochs and normalize time axis of the data
+    data = epoch_data(params,data);
+    temptime = data.time{1};
+    [data.time{:}] = deal(temptime);
+
     % Compute source reconstruction
     source = compute_spatial_filter(params,data,'fullSpectrum');
     parsave(fullfile(params.SourcePath,[bidsID '_source.mat']),source);
@@ -95,7 +107,7 @@ for iSubj=1:n
     avgpow = mean(pow,1);
     
     % Fit a fooof object in the 2 - 40 Hz freq range 
-    fm = fooof('freq_range',[2,40],'aperiodic_mode','fixed');   
+    fm = fooof('freq_range',[2,40],'peak_width_limits',[1 12],'aperiodic_mode','fixed');   
     fm = add_data(fm,freq,avgpow);
     fm = fit(fm);
     fname = [bidsID '_PFC_fooofm.mat'];
