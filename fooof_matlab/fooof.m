@@ -97,8 +97,8 @@ classdef fooof
                 obj.power_spectrum = log10(pow);
             end
             obj.freq_res = freq(2) - freq(1);
-            if obj.freq_res <= obj.peak_width_limits(1)
-                str = sprintf('Lower bound peak width limit is < or = the frequency resolution: %.2f <= %.2f. Too low a limit may lead to overfitting noise. We recommend a lower bound of approximately twice the frequency resolution.',obj.freq_res, obj.peak_width_limits(1));
+            if obj.peak_width_limits(1) <= obj.freq_res
+                str = sprintf('Lower bound peak width limit is < or = the frequency resolution: %.2f <= %.2f. Too low a limit may lead to overfitting noise. We recommend a lower bound of approximately twice the frequency resolution.', obj.peak_width_limits(1),obj.freq_res);
                 warning(str);
             end
 
