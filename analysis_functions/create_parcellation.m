@@ -14,10 +14,10 @@ params.VIS_mask = contains(parcellation.ROIlabel,{'ExStr_','Striate','StriCal'})
 
 %% Source model 
 % Source model: centroid positons from Schaefer atlas
-atlas400 = readtable(params.AtlasPath);
+atlas = readtable(params.AtlasPath);
 cfg = [];
 cfg.method = 'basedonpos';
-cfg.sourcemodel.pos = [atlas400.R, atlas400.A, atlas400.S];
+cfg.sourcemodel.pos = [atlas.R, atlas.A, atlas.S];
 cfg.unit = 'mm';
 cfg.headmodel = params.HeadModelPath;
 sourcemodel_atlas = ft_prepare_sourcemodel(cfg);
