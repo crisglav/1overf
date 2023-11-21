@@ -16,7 +16,7 @@ if ~exist("stats_path",'dir')
 end
 
 % Analsysis type:
-analysis = 'real'; % 'blinded' / 'real'
+analysis = 'blinded'; % 'blinded' / 'real'
 
 switch analysis
     case 'blinded'

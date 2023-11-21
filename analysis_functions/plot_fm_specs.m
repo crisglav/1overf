@@ -1,7 +1,7 @@
 function fig = plot_fm_specs(fm,spec,varargin)
 spec_id = spec.spec_id;
+epoch_length = spec.epoch_length{:};
 taper = spec.taper{:};
-padding = spec.zero_padding{:};
 fooof_range = spec.fooof_range{:};
 fooof_knee = spec.fooof_knee{:};
 if nargin > 0
@@ -47,7 +47,7 @@ end
 legend ([sp(1),ap,fo],{'Original spectrum','Aperiodic fit','Full model fit'});
 ylabel('logPower');
 
-s = sprintf('SPEC %d. TAPER: %s PADDING: %s FREQ RANGE: %s KNEE: %s',spec_id, taper,padding, fooof_range,fooof_knee);
+s = sprintf('SPEC %d. EPOCH LENGTH: %s TAPER: %s FREQ RANGE: %s KNEE: %s',spec_id, epoch_length, taper, fooof_range,fooof_knee);
 title(s);
 % Extract error
 if isprop(fm,'group_results')
