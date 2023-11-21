@@ -253,17 +253,17 @@ title('Paper plot');
 % They are the same!!
 % Median value of the 95 percentile across all randomizations
 med_per95 = median(prctile(d_rand,95,2))
-% Percentile 95 of the median across all randomization
+% Percentile 95 of the median across all randomizations
 per95_med = prctile(median(d_rand),95)
 
 % They are not the same!!
 % Median value of the 95 percentile across all randomizations
 med_per95 = median(prctile(d_2s,95,2))
-% Percentile 95 of the median across all randomization
+% Percentile 95 of the median across all randomizations
 per95_med = prctile(median(d_2s),95)
 
 med_per95 = median(prctile(sort(d_2s),95,2))
-% Percentile 95 of the median across all randomization
+% Percentile 95 of the median across all randomizations
 per95_med = prctile(median(sort(d_2s)),95)
 
 median(d_2s) == median(sort(d_2s));

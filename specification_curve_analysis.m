@@ -83,7 +83,6 @@ ci_sup = nan(nSpec,1);
 
 % Open log file
 fid = fopen(fullfile(results_path,'logfile.txt'),'a');
-fid_e = fopen(fullfile(results_path,'logfile_errors.txt'),'a');
 
 %% Loop over all randomizations
 nRand = 500;
@@ -119,6 +118,7 @@ for iRand=0:nRand
             case '5'
                 params = params5s;
         end
+
 
         % Take out the parfor loop some variable for improved performance
         VdataPath = params.VdataPath;
@@ -261,6 +261,7 @@ for iRand=0:nRand
         writetable(results,fullfile(results_path,sprintf('specs_bf_rand%.3d.txt',iRand)),'Delimiter',',');
         save(fullfile(results_path,sprintf('specs_ap_exp_rand%.3d.mat',iRand)),'exp','r_squared','mae','succeed');
     end
+
 end
 t002 = toc(t001);
 fprintf(fid,'Script ended successfully. It took: %.2f hours \n',t002/(60*60));
