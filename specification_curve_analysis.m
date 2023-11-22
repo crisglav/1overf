@@ -69,18 +69,6 @@ nSubj = height(participants);
 % participant_id = {'sub-011'};
 % nSubj = length(participant_id);
 
-% Preallocate variables
-exp = nan(nSpec,nSubj);
-r_squared = nan(nSpec,nSubj);
-mae = nan(nSpec,nSubj);
-succeed = zeros(nSpec,nSubj);
-
-bayesfactor = nan(nSpec,1);
-p = nan(nSpec,1);
-effect = nan(nSpec,1);
-ci_inf = nan(nSpec,1);
-ci_sup = nan(nSpec,1);
-
 % Open log file
 fid = fopen(fullfile(results_path,'logfile.txt'),'a');
 
@@ -90,6 +78,18 @@ nRand = 500;
 t001 = tic;
 for iRand=0:nRand
     t01 = tic;
+    % Preallocate variables
+    exp = nan(nSpec,nSubj);
+    r_squared = nan(nSpec,nSubj);
+    mae = nan(nSpec,nSubj);
+    succeed = zeros(nSpec,nSubj);
+    
+    bayesfactor = nan(nSpec,1);
+    p = nan(nSpec,1);
+    effect = nan(nSpec,1);
+    ci_inf = nan(nSpec,1);
+    ci_sup = nan(nSpec,1);
+
     % Randomization 0 is the original specification curve
     if iRand>0
         ix = randperm(nSubj);
@@ -179,7 +179,7 @@ for iRand=0:nRand
                         case 'no'
                             fm = fooofGroup('freq_range',fooof_range,'peak_width_limits',[1 12]);
                         case 'yes'
-                            fm = fooofGroup('freq_range',fooof_range,'peak_width_limits',[1 12],fooof_range,'aperiodic_mode','knee');
+                            fm = fooofGroup('freq_range',fooof_range,'peak_width_limits',[1 12],'aperiodic_mode','knee');
                     end
             end
 
@@ -189,7 +189,7 @@ for iRand=0:nRand
             try
                 fm = fit(fm);
             catch
-                fprintf(fid_e,'Fitting failed in specification %d, participant %s \n',[iSpec bidsID]);
+                succeed(iSpec,iSubj) = -1;
                 continue;
             end
 
@@ -228,24 +228,12 @@ for iRand=0:nRand
         ci_inf(iSpec) = d.ConfidenceIntervals(1);
         ci_sup(iSpec) = d.ConfidenceIntervals(2);
 
-        % Cohen's d by hand
-        %     n1 = sum(hc_mask);
-        %     n2 = sum(pa_mask);
-        %     m1 = mean(exp(iSpec,hc_mask));
-        %     m2 = mean(exp(iSpec,pa_mask));
-        %     s1 = nanvar(exp(iSpec,hc_mask))*(n1-1);
-        %     s2 = nanvar(exp(iSpec,pa_mask))*(n2-1);
-        %     pooledsd = sqrt((s1 + s2)/(n1 + n2 - 2));
-        %     effect(iSpec) = (m1 - m2)/pooledsd;
-
         t2 = toc(t1);
         fprintf(fid,'Specification %d took %.2f seconds \n',[iSpec t2]);
 
     end
     t02 = toc(t01);
     fprintf(fid,'The randomization took %.2f minutes \n',t02/60);
-
-    fclose('all');
 
     % Save results
     results = s;
