@@ -17,8 +17,9 @@ nSpec = 48;
 
 % LOAD ORIGINAL CURVE
 results_orig = readtable(fullfile(datapath,'specs_bf.txt'));
-d_orig = sort(results_orig.effect_size);
-bf_orig = results_orig.bayes_factor;
+[d_orig, ix] = sort(results_orig.effect_size);
+bf_temp = results_orig.bayes_factor;
+bf_orig = bf_temp(ix); % Sort according the effect size
 % Predominant direction of effect for the original data
 pos = sum(d_orig > 0);
 neg = sum(d_orig < 0);
@@ -35,8 +36,9 @@ sign = nan(1,nRand);
 for iRand=1:nRand
     % load statistics of randomizations
     results = readtable(fullfile(datapath,sprintf('specs_bf_rand%.3d.txt',iRand)));
-    d_rand(:,iRand) = sort(results.effect_size);
-    bf_rand(:,iRand) = results.bayes_factor;
+    [d_rand(:,iRand),ix] = sort(results.effect_size);
+    bf_temp = results.bayes_factor;
+    bf_rand(:,iRand) = bf_temp(ix);
     
     % Calculate the dominant sign of effects for each randomization
     pos = sum(d_rand(:,iRand) > 0);
@@ -55,24 +57,43 @@ d_2s = d_rand.*sign*sign_orig;
 
 % MEDIAN TEST
 % ===========================================================================
-% Cristina's version
-median_d_rand = sort(median(d_rand));
+% Cristina's version (not flipping). Not sure if this approach is correct.
+median_d_rand = sort(median(d_rand)); % sorting here is not needed for the test, just for plotting tcrit
 tcrit_low = sum(median_d_rand <= prctile(median_d_rand,2.5));
 tcrit_high = sum(median_d_rand <= prctile(median_d_rand,97.5));
-t = min(sum(median(d_orig)<median_d_rand),sum(median(d_orig)>median_d_rand));
+t = min(sum(median_d_rand >= median(d_orig)),sum(median_d_rand <= median(d_orig)));
 p_median_cris = 2*(t/nRand);
-test_pos_median = or(t<tcrit_low,t>tcrit_high);
+% Other optionis to do a z-test. Standarize the distribution of median values (z-score)
+[z,mu,sigma] = zscore(median(d_rand));
+z_orig = (median(d_orig)-mu)/sigma;
+if z_orig > 0
+    p_z = 2*sum(z>z_orig)/nRand;
+else
+    p_z = 2*sum(z<z_orig)/nRand;
+end
 
-% Original version
+% Original version (2 sided)
 median_d_rand_2s = sort(median(d_2s)); % For the test data is not sorted (plot 2), but the papers' plot is sorted (plot 6)
-% Proportion of simulations with median value at least as great as observed
 % You have to decide whether to test if the median value is greater as
-% observed or smallar as observed based on the orig_sign. I find completly
-% misleading.
-t = sum(median_d_rand_2s>=median(d_orig));
-p_median = t/nRand;
+% observed or smaller as observed based on the orig_sign.
+if sign_orig == 1
+    % Number of simulations with median value at least as great as observed
+    t = sum(median_d_rand_2s>=median(d_orig));
+elseif sign_orig == -1 
+    % Number of simulations with median value at least as smaller as observed
+    t = sum(median_d_rand_2s<=median(d_orig));
+end
+p_median_2s = t/nRand;
 
-% Last option, for completeness (Same result as original version)
+% One sided
+if sign_orig == 1
+    t = sum(median_d_rand >= median(d_orig));
+elseif sign_orig == -1 
+    t = sum(median_d_rand <= median(d_orig));
+end
+p_median_1s = t/nRand;
+
+% Last option, for completeness (Same result as original version because when we compute the median the data has to be sorted)
 median_d_rand_2s_sorted = sort(median(sort(d_2s)));
 t = sum(median_d_rand_2s_sorted>=median(d_orig));
 p_median_sorted = t/nRand;
@@ -125,9 +146,23 @@ title('Share of significant specifications test');
 avgBF_orig = mean(log(bf_orig));
 avgBF_rand = sort(mean(log(bf_rand),1));
 tcrit_high = sum(avgBF_rand <= prctile(avgBF_rand,95));
-t = sum(avgBF_orig>avgBF_rand); 
+% Indication of a positive effect (observed BF higher than the distribution of
+% random BF)
+t = sum(avgBF_orig>avgBF_rand);
+% Indication of a null effect (obseved BF lower than the distribution of
+% random BF)
+t = sum(avgBF_orig<avgBF_rand);
 p_aggregateBF = 1-t/nRand;
-test_pos_avgBF = t>tcrit_high;
+
+% Zscore and test
+[z,mu,sigma] = zscore(avgBF_rand);
+z_orig = (avgBF_orig-mu)/sigma;
+if z_orig > 0
+    p_z = 2*sum(z>z_orig)/nRand;
+else
+    p_z = 2*sum(z<z_orig)/nRand;
+end
+
 
 figure;
 histogram(avgBF_rand)
@@ -239,10 +274,10 @@ ylim([-0.5,0.5])
 yline(0);
 
 nexttile
-plot(1:nSpec,sort(prctile(sort(d_2s),50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
-plot(1:nSpec,sort(prctile(sort(d_2s),2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
-plot(1:nSpec,sort(prctile(sort(d_2s),95,2)), 'Color', 'red', 'LineWidth', 1.5), hold on;
-plot(1:nSpec,sort(prctile(sort(d_2s),97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,prctile(sort(d_2s),50,2),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,prctile(sort(d_2s),2.5,2), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,prctile(sort(d_2s),95,2), 'Color', 'red', 'LineWidth', 1.5), hold on;
+plot(1:nSpec,prctile(sort(d_2s),97.5,2), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
 plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
 scatter(24,d_orig(24),'black','filled'); hold on;
 ylim([-0.5,0.5])
@@ -250,7 +285,8 @@ yline(0);
 title('Paper plot');
 
 
-% They are the same!!
+
+% They are not the same!!
 % Median value of the 95 percentile across all randomizations
 med_per95 = median(prctile(d_rand,95,2))
 % Percentile 95 of the median across all randomizations
@@ -271,25 +307,3 @@ median(d_2s) == median(sort(d_2s));
 prctile(d_2s,95,2) ~= prctile(sort(d_2s),95,2);
 
 median(d_2s,2) ~= median(sort(d_2s),2)
-
-
-% PLOT THE MEDIAN CURVES
-% medianCurves = prctile(d_rand,50,2)';
-% lowPC = prctile(d_rand,2.5,2)';
-% highPC = prctile(d_rand,97.2,2)';
-% figure;
-% grey = [0.8 0.8 0.8];
-% plot(1:nSpec,medianCurves,'Color', grey, 'LineWidth', 1.5), hold on;
-% plot(1:nSpec,lowPC, '--', 'Color', grey, 'LineWidth', 1.5), hold on;
-% plot(1:nSpec,highPC, '--', 'Color', grey, 'LineWidth', 1.5), hold on;
-% plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
-% scatter(24,d_orig(24),'black','filled'); hold on;
-% ylim([-0.3 0.3]);
-% test = yline(0);
-% ylabel("Robust Cohen's d");
-% xlabel("specifications (nr, sorted by effect size)");
-% set(gca, 'TickDir', 'out');
-% box off
-% xlim([1 nSpec]);
-% yticks(-0.3:0.1:0.3);
-% title('No sign flipped');

@@ -65,10 +65,6 @@ hc_mask = participants_sorted.group == 'hc';
 participant_id = participants_sorted.participant_id;
 nSubj = height(participants);
 
-% % Hardcoded for testing
-% participant_id = {'sub-011'};
-% nSubj = length(participant_id);
-
 % Open log file
 fid = fopen(fullfile(results_path,'logfile.txt'),'a');
 
@@ -97,7 +93,7 @@ for iRand=0:nRand
         participants_sorted.group = rand_group;
         % Separate patients and healthy participants groups
         pa_mask = participants_sorted.group == 'pa';
-        hc_mask = participans_sorted.group == 'hc';
+        hc_mask = participants_sorted.group == 'hc';
     end
 
     % Loop over all specifications (48)
