@@ -18,7 +18,7 @@ addpath('analysis_functions');
 addpath('fooof_matlab');
 
 % Load preprocessing parameters
-fparams = '../data/blinded/derivatives_v2023_09_28/params.json';
+% fparams = '../data/blinded/derivatives_v2023_09_28/params.json';
 fparams = '../data/blinded/derivatives_v2023_11_16/params.json';
 params = load_params(fparams);
 
@@ -30,7 +30,7 @@ params = create_parcellation(params);
 % Define the frequency band in which to compute the spatial filter
 params.FreqBand.fullSpectrum = [0.5 100.5];
 % Define epoch length in seconds
-params.EpochLength = 5;
+params.EpochLength = 2;
 params.EpochOverlap = 0.5;
 
 % Create output folders
@@ -91,8 +91,6 @@ parfor iSubj=1:n
     cfg.method = 'mtmfft';
     cfg.taper = 'dpss';
     cfg.tapsmofrq = 1;
-    cfg.pad = 5;
-    cfg.padtype = 'zero';
     cfg.output = 'pow';
     cfg.keeptrials ='no';
     power = ft_freqanalysis(cfg, vdata);
