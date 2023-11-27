@@ -6,13 +6,13 @@
 % Cristina Gil Avila, 08.11.2023
 
 % define and create output folder
-datapath = '/rechenmagd3/Experiments/2023_1overf/results_v2/sca';
+datapath = '/rechenmagd3/Experiments/2023_1overf/results/sca';
 figures_folder = '../results/figures/sca_inference/';
 if ~exist(figures_folder,'dir')
     mkdir(figures_folder);
 end
 % Hardcoded number of randomizations and specifications
-nRand = 151;
+nRand = 500;
 nSpec = 48;
 
 % LOAD ORIGINAL CURVE
@@ -83,7 +83,7 @@ elseif sign_orig == -1
     % Number of simulations with median value at least as smaller as observed
     t = sum(median_d_rand_2s<=median(d_orig));
 end
-p_median_2s = t/nRand;
+p_median = t/nRand;
 
 % One sided
 if sign_orig == 1
@@ -113,7 +113,7 @@ end
 % Extract the effects of 'significant' specifications for all
 % randomizations
 significant_d_rand = nan(nSpec,nRand); 
-significant_d_rand(bf_rand>3) = d_rand(bf_rand>3);
+significant_d_rand(bf_rand>3) = d_2s(bf_rand>3);
 % Count only the significant specifications that have the same sign as the
 % dominant curve effect
 BF_rand_count = sum((significant_d_rand .* sign) >0,1);
@@ -151,18 +151,9 @@ tcrit_high = sum(avgBF_rand <= prctile(avgBF_rand,95));
 t = sum(avgBF_orig>avgBF_rand);
 % Indication of a null effect (obseved BF lower than the distribution of
 % random BF)
-t = sum(avgBF_orig<avgBF_rand);
+% t = sum(avgBF_orig<avgBF_rand);
+% How to make this test two-sided??? 
 p_aggregateBF = 1-t/nRand;
-
-% Zscore and test
-[z,mu,sigma] = zscore(avgBF_rand);
-z_orig = (avgBF_orig-mu)/sigma;
-if z_orig > 0
-    p_z = 2*sum(z>z_orig)/nRand;
-else
-    p_z = 2*sum(z<z_orig)/nRand;
-end
-
 
 figure;
 histogram(avgBF_rand)
@@ -186,7 +177,7 @@ tiledlayout(3,3)
 % ALL THE RANDOMIZED CURVES
 nexttile
 plot(1:nSpec,d_rand), hold on;
-plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+plot(1:nSpec,d_orig, 'Color', 'k', 'LineWidth', 2); hold on;
 scatter(24,d_orig(24),'black','filled'); hold on;
 ylim([-0.5,0.5])
 yline(0);
@@ -195,7 +186,7 @@ title('All randomizations')
 
 nexttile
 plot(1:nSpec,d_2s), hold on;
-plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+plot(1:nSpec,d_orig, 'Color', 'k', 'LineWidth', 2); hold on;
 scatter(24,d_orig(24),'black','filled'); hold on;
 ylim([-0.5,0.5])
 yline(0);
@@ -203,7 +194,7 @@ title('All randomizations, flipped sign')
 
 nexttile
 plot(1:nSpec,sort(d_2s)), hold on;
-plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 2); hold on;
+plot(1:nSpec,d_orig, 'Color','k', 'LineWidth', 2); hold on;
 scatter(24,d_orig(24),'black','filled'); hold on;
 ylim([-0.5,0.5])
 yline(0);
@@ -266,7 +257,7 @@ yline(0);
 nexttile
 plot(1:nSpec,sort(prctile(d_2s,50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
 plot(1:nSpec,sort(prctile(d_2s,2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
-plot(1:nSpec,sort(prctile(d_2s,95,2)), 'Color', 'red', 'LineWidth', 1.5), hold on;
+% plot(1:nSpec,sort(prctile(d_2s,95,2)), 'Color', 'red', 'LineWidth', 1.5), hold on;
 plot(1:nSpec,sort(prctile(d_2s,97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
 plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
 scatter(24,d_orig(24),'black','filled'); hold on;
@@ -276,7 +267,7 @@ yline(0);
 nexttile
 plot(1:nSpec,prctile(sort(d_2s),50,2),'Color', grey, 'LineWidth', 1.5), hold on;
 plot(1:nSpec,prctile(sort(d_2s),2.5,2), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
-plot(1:nSpec,prctile(sort(d_2s),95,2), 'Color', 'red', 'LineWidth', 1.5), hold on;
+% plot(1:nSpec,prctile(sort(d_2s),95,2), 'Color', 'red', 'LineWidth', 1.5), hold on;
 plot(1:nSpec,prctile(sort(d_2s),97.5,2), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
 plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
 scatter(24,d_orig(24),'black','filled'); hold on;
@@ -301,9 +292,32 @@ per95_med = prctile(median(d_2s),95)
 med_per95 = median(prctile(sort(d_2s),95,2))
 % Percentile 95 of the median across all randomizations
 per95_med = prctile(median(sort(d_2s)),95)
-
 median(d_2s) == median(sort(d_2s));
 % But
 prctile(d_2s,95,2) ~= prctile(sort(d_2s),95,2);
-
 median(d_2s,2) ~= median(sort(d_2s),2)
+
+%% Figures for internal presentation
+figure;
+tiledlayout(1,2);
+nexttile;
+plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+plot(1:nSpec,sort(prctile(d_rand,50,2)),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(d_rand,2.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,sort(prctile(d_rand,97.5,2)), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+scatter(24,d_orig(24),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+title('All randomizations');
+ylabel('Effect size (Cohens d)')
+xlabel('Specifications sorted by effect size')
+nexttile;
+plot(1:nSpec,d_orig, 'Color', [0 0.4470 0.7410], 'LineWidth', 1.5); hold on;
+plot(1:nSpec,prctile(sort(d_2s),50,2),'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,prctile(sort(d_2s),2.5,2), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+plot(1:nSpec,prctile(sort(d_2s),97.5,2), '--', 'Color', grey, 'LineWidth', 1.5), hold on;
+scatter(24,d_orig(24),'black','filled'); hold on;
+ylim([-0.5,0.5])
+yline(0);
+legend({'Observed data','Median under the null','2.5th and 97.5th under the null'})
+title('All randomizations, flipped sign, sorted')

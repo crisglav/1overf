@@ -13,11 +13,7 @@ addpath('fooof_matlab');
 run('../toolboxes/bayes_factor/installBayesFactor.m')
 
 % Load parameter files and define paths
-params2s = load('../results/features/params_2s.mat');
-params2s = params2s.params;
-params5s = load('../results/features/params_2s.mat');
-params5s = params5s.params;
-
+load('../results/features/params_2s.mat');
 figures_path ='../results/figures/';
 results_path = '../results/sca/';
 if ~exist(results_path,'dir')
@@ -49,7 +45,7 @@ else
     nSpec = height(s);
 end
 %% Load subject ids
-participants = readtable(fullfile(params2s.RawDataPath,'participants_clean.tsv'),'Filetype','text');
+participants = readtable(fullfile(params.RawDataPath,'participants_clean.tsv'),'Filetype','text');
 
 % Order the participants.tsv in descending order by bidsID
 participants.group = categorical(participants.group);
@@ -65,6 +61,16 @@ hc_mask = participants_sorted.group == 'hc';
 participant_id = participants_sorted.participant_id;
 nSubj = height(participants);
 
+% Load pre-computed PSDs
+load('../results/sca/power/power_sca.mat');
+
+% list executed randomizations, extract randomizations ids
+rfiles = dir(fullfile(results_path,'specs_bf_rand*.txt'));
+ids = str2double(extract({rfiles.name},digitsPattern(3)));
+start_rand = max(ids)+1;
+if isempty(start_rand)
+    start_rand = 0;
+end
 % Open log file
 fid = fopen(fullfile(results_path,'logfile.txt'),'a');
 
@@ -72,7 +78,7 @@ fid = fopen(fullfile(results_path,'logfile.txt'),'a');
 nRand = 500;
 
 t001 = tic;
-for iRand=0:nRand
+for iRand=start_rand:nRand
     t01 = tic;
     % Preallocate variables
     exp = nan(nSpec,nSubj);
@@ -108,41 +114,21 @@ for iRand=0:nRand
         fooof_knee = s.fooof_knee{iSpec};
 
         % S1. Epoch length
-        switch epoch_length
-            case '2'
-                params = params2s;
-            case '5'
-                params = params5s;
+        % S2. Taper
+        if and(strcmp(epoch_length,'2'),strcmp(taper,'dpss'))
+            power_all = power_2s_dpss;
+        elseif and(strcmp(epoch_length,'2'),strcmp(taper,'hanning'))
+            power_all = power_2s_hanning;
+        elseif and(strcmp(epoch_length,'5'),strcmp(taper,'dpss'))
+            power_all = power_5s_dpss;
+        elseif and(strcmp(epoch_length,'5'),strcmp(taper,'hanning'))
+            power_all = power_5s_hanning;
         end
-
-
-        % Take out the parfor loop some variable for improved performance
-        VdataPath = params.VdataPath;
-        PFC_mask = params.PFC_mask;
-
+      
         % Loop over subjects (264)
         parfor iSubj=1:nSubj
 
-            bidsID = participant_id{iSubj};
-            bidsID = [bidsID '_task-closed'];
-
-            % ----- Load precomputed virtual channel data ------
-            aux = load(fullfile(VdataPath,[bidsID '_vdata.mat']));
-
-            % ----- Estimate power spectra at the source level in the PFC only -----
-            cfg = [];
-            cfg.foilim = [1 100];
-            cfg.channel = find(PFC_mask);
-            cfg.method = 'mtmfft';
-            % S2. Taper
-            cfg.taper = taper;
-            switch taper
-                case 'dpss'
-                    cfg.tapsmofrq = 1;
-            end
-            cfg.output = 'pow';
-            cfg.keeptrials ='no';
-            power = ft_freqanalysis(cfg, aux.vdata);
+            power = power_all{iSubj};
 
             % ----- Model power spectrum with FOOOF ------
             % Initialize a fooof object with settings depending on the specification
@@ -229,7 +215,7 @@ for iRand=0:nRand
 
     end
     t02 = toc(t01);
-    fprintf(fid,'The randomization took %.2f minutes \n',t02/60);
+    fprintf(fid,'The randomization %d took %.2f minutes \n',[iRand t02/60]);
 
     % Save results
     results = s;
@@ -249,4 +235,4 @@ for iRand=0:nRand
 end
 t002 = toc(t001);
 fprintf(fid,'Script ended successfully. It took: %.2f hours \n',t002/(60*60));
-close(fid);
+fclose(fid);
