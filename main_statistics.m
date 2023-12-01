@@ -11,12 +11,14 @@ participants_path = '../data/blinded/';
 fooof_path = '../results/features/fooof_matlab/';
 stats_path = '../results/statistics';
 figures_path = '../results/figures';
-if ~exist("stats_path",'dir')
+if ~exist(stats_path,'dir')
     mkdir(stats_path)
 end
-
+if ~exist(figures_path,'dir')
+    mkdir(figures_path)
+end
 % Analsysis type:
-analysis = 'blinded'; % 'blinded' / 'real'
+analysis = 'real'; % 'blinded' / 'real'
 
 switch analysis
     case 'blinded'
@@ -55,7 +57,7 @@ rois = {'PFC'};
 for iRoi=1:length(rois)
     
     roi = rois{iRoi};
-    roi_path = fullfile(fooof_path,roi,'2s');
+    roi_path = fullfile(fooof_path,roi);
     roi_files = dir(fullfile(roi_path,'*.mat'));
     n = length(roi_files);
 
@@ -168,7 +170,7 @@ id = cell2mat(id);
 patients_sorted = patients(ix,:);
 
 % Load PFC fooof files
-pfc_files = dir(fullfile(fooof_path,'PFC','2s','*.mat'));
+pfc_files = dir(fullfile(fooof_path,'PFC','*.mat'));
 % Extracf bids Id from files names
 fooofid = cellfun(@(x) str2double(x(5:7)),{pfc_files.name},'UniformOutput',false);
 fooofid = cell2mat(fooofid);

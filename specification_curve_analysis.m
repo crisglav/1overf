@@ -13,7 +13,7 @@ addpath('fooof_matlab');
 run('../toolboxes/bayes_factor/installBayesFactor.m')
 
 % Load parameter files and define paths
-load('../results/features/params_2s.mat');
+load('../results/features/params.mat');
 figures_path ='../results/figures/';
 results_path = '../results/sca/';
 if ~exist(results_path,'dir')

@@ -11,7 +11,7 @@ clear h;
 % Schaefer atlas
 nnetworks = '17'; % 7 or 17
 nsources = '100'; % 100, 200, ..., 1000
-schaefer_path = ['schaefer_parcellations/Schaefer2018_' nsources 'Parcels_' nnetworks 'Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'];
+schaefer_path = ['/rechenmagd3/Experiments/2023_1overf/toolboxes/schaefer_parcellations/Schaefer2018_' nsources 'Parcels_' nnetworks 'Networks_order_FSLMNI152_1mm.Centroid_RAS.csv'];
 schaefer = readtable(schaefer_path);
 
 % Volume conduction model
@@ -85,6 +85,16 @@ end
 % title (t,['Schaefer atlas ' nnetworks ' networks, ' nsources ' sources, mPFC = ' num2str(height(PFC)) ])
 % saveas(f,'Schaefer atlas ROIS.jpeg');
 
+%%
+figure;
+ft_plot_mesh(vol.bnd(3),'facealpha',0.05,'facecolor',[0.1 0.1 0.1],'edgecolor',[0.5 0.5 0.5],'edgealpha',0.5); % brain
+roi = 'PFC';
+for i=1:length(labels.(roi))
+    %     hold on
+    idx  = find(cellfun(@(x) contains(x,['_' labels.(roi){i} '_']), sch.(roi).ROIName));
+    ft_plot_mesh(pos.PFC(idx,:), 'vertexsize',15, 'vertexcolor','k');
+end
+view(0, 90);
 
 
 

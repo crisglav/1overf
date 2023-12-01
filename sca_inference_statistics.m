@@ -6,8 +6,8 @@
 % Cristina Gil Avila, 08.11.2023
 
 % define and create output folder
-datapath = '/rechenmagd3/Experiments/2023_1overf/results/sca';
-figures_folder = '../results/figures/sca_inference/';
+datapath = '/rechenmagd3/Experiments/2023_1overf/results_v3/sca';
+figures_folder = '../results_v3/figures/sca_inference/';
 if ~exist(figures_folder,'dir')
     mkdir(figures_folder);
 end
@@ -23,7 +23,7 @@ bf_orig = bf_temp(ix); % Sort according the effect size
 % Predominant direction of effect for the original data
 pos = sum(d_orig > 0);
 neg = sum(d_orig < 0);
-if pos > neg
+if pos >= neg
     sign_orig = 1;
 elseif neg > pos
     sign_orig = -1;
@@ -41,39 +41,80 @@ for iRand=1:nRand
     bf_rand(:,iRand) = bf_temp(ix);
     
     % Calculate the dominant sign of effects for each randomization
-    pos = sum(d_rand(:,iRand) > 0);
-    neg = sum(d_rand(:,iRand) < 0);
-    if pos > neg
-        sign(iRand) = 1;
-    elseif neg > pos
+    pos = sum(d_rand(:,iRand) >= 0);
+    if (pos/nSpec) < 0.5
         sign(iRand) = -1;
+    else
+        sign(iRand) = 1;
     end
 end
 % Flip the curves that do not have the dominant sign. The dominant sign is
 % based on the original curve.
 d_2s = d_rand.*sign*sign_orig;
 
+%% LOAD ELISABETHS DATA
+nRand = 500;
+nSpec = 72;
+
+% Load original curve
+datapath = '/rechenmagd4/Experiments/2020_10_alpha_peak_frequency/results/stats/';
+results_orig = readtable(fullfile(datapath,'results_RQ2_session1_all_specs_orig_stats.csv'));
+rowsElec = find(results_orig.electrodes == "global");
+[d_orig, ix]= sort(results_orig.R(rowsElec,:));
+bf_temp = results_orig.BF10(rowsElec,:);
+bf_orig = bf_temp(ix);
+% Predominant direction of effect for the original data
+pos = sum(d_orig > 0);
+neg = sum(d_orig < 0);
+if pos >= neg
+    sign_orig = 1;
+elseif neg > pos
+    sign_orig = -1;
+end
+
+% LOAD RANDOMIZED SPECIFICTIONS
+% create some variables for collection of results
+d_rand  =  nan(nSpec,nRand);
+bf_rand    = nan(nSpec,nRand);
+
+for iRand = 1:nRand
+
+    % load statistics of randomizations
+    results = readtable([datapath 'results_RQ2_session1_all_specs_rand' num2str(iRand) '_stats.csv']);
+    rowsElec = find(results.electrodes == "global");
+    % sort according to effect size
+    [d_rand(:,iRand), ix] = sort(results.R(rowsElec,:));
+    % again, sort Bayes Factors in same way to keep assignment
+    bf_temp = results.BF10(rowsElec,:);
+    bf_rand(:,iRand)   = bf_temp(ix);
+
+    % calculate the dominant sign of effects for each randomization
+    pos = sum(d_rand(:,iRand) >= 0);
+    if (pos/nSpec) > 0.5
+        sign(iRand) = 1;
+    else
+        sign(iRand) = -1;
+    end
+end
+d_2s = d_rand.*sign*sign_orig;
 %% INFERENTIAL TESTS
 
 % MEDIAN TEST
 % ===========================================================================
-% Cristina's version (not flipping). Not sure if this approach is correct.
-median_d_rand = sort(median(d_rand)); % sorting here is not needed for the test, just for plotting tcrit
-tcrit_low = sum(median_d_rand <= prctile(median_d_rand,2.5));
-tcrit_high = sum(median_d_rand <= prctile(median_d_rand,97.5));
-t = min(sum(median_d_rand >= median(d_orig)),sum(median_d_rand <= median(d_orig)));
-p_median_cris = 2*(t/nRand);
-% Other optionis to do a z-test. Standarize the distribution of median values (z-score)
-[z,mu,sigma] = zscore(median(d_rand));
-z_orig = (median(d_orig)-mu)/sigma;
-if z_orig > 0
-    p_z = 2*sum(z>z_orig)/nRand;
+% A) Not flipping version
+% Note: The distribution median_d_rand is centered around 0 by
+% construction
+median_d_rand = median(d_rand); % sorting here is not needed for the test, just for plotting tcrit
+if median(d_orig)>=0
+    t = sum(median_d_rand >= median(d_orig)) + sum(median_d_rand <= -median(d_orig));
 else
-    p_z = 2*sum(z<z_orig)/nRand;
+    t = sum(median_d_rand <= median(d_orig)) + sum(median_d_rand >= -median(d_orig));
 end
+p_median = t/nRand;
 
-% Original version (2 sided)
-median_d_rand_2s = sort(median(d_2s)); % For the test data is not sorted (plot 2), but the papers' plot is sorted (plot 6)
+
+% B) Original version flipping the curves(2 sided)
+median_d_rand_2s = median(d_2s); % For the test data is not sorted (plot 2), but the papers' plot is sorted (plot 6)
 % You have to decide whether to test if the median value is greater as
 % observed or smaller as observed based on the orig_sign.
 if sign_orig == 1
@@ -83,9 +124,15 @@ elseif sign_orig == -1
     % Number of simulations with median value at least as smaller as observed
     t = sum(median_d_rand_2s<=median(d_orig));
 end
-p_median = t/nRand;
+p_median_2s = t/nRand;
 
-% One sided
+% % Checks
+% find(abs(median_d_rand) ~= abs(median_d_rand_2s))
+% x = median_d_rand_2s>=median(d_orig);
+% y = or(median_d_rand >= median(d_orig),median_d_rand <= -median(d_orig));
+% find(x~=y)
+
+% C) One sided
 if sign_orig == 1
     t = sum(median_d_rand >= median(d_orig));
 elseif sign_orig == -1 
@@ -93,13 +140,12 @@ elseif sign_orig == -1
 end
 p_median_1s = t/nRand;
 
-% Last option, for completeness (Same result as original version because when we compute the median the data has to be sorted)
-median_d_rand_2s_sorted = sort(median(sort(d_2s)));
-t = sum(median_d_rand_2s_sorted>=median(d_orig));
-p_median_sorted = t/nRand;
+% % Last option, for completeness (Same result as original version because when we compute the median the data has to be sorted)
+% median_d_rand_2s_sorted = sort(median(sort(d_2s)));
+% t = sum(median_d_rand_2s_sorted>=median(d_orig));
+% p_median_sorted = t/nRand;
 
-
-% SHARE OF SIGNIFICANT RESULTS TEST
+% SHARE OF DOMINANT AND SIGNIFICANT RESULTS TEST
 % ===========================================================================
 % Extract the effects (d) of the 'significant' specifications
 significant_d_orig = d_orig(bf_orig>3);
@@ -110,20 +156,47 @@ if ~isempty(significant_d_orig)
 else
     BF_orig_count = 0;
 end
+
+% A) Not flipping version.
 % Extract the effects of 'significant' specifications for all
 % randomizations
 significant_d_rand = nan(nSpec,nRand); 
-significant_d_rand(bf_rand>3) = d_2s(bf_rand>3);
+significant_d_rand(bf_rand>3) = d_rand(bf_rand>3);
 % Count only the significant specifications that have the same sign as the
 % dominant curve effect
 BF_rand_count = sum((significant_d_rand .* sign) >0,1);
+% tcrit_high = sum(BF_rand_count <= prctile(BF_rand_count,95));
+t = sum(BF_rand_count>=BF_orig_count); 
+p_share = t/nRand;
 
-% One sided test. Check only if the share of specifications is higher than would be expected if all specifications had an effect of zero.
-BF_rand_count = sort(BF_rand_count);
-tcrit_high = sum(BF_rand_count <= prctile(BF_rand_count,95));
-t = sum(BF_orig_count>BF_rand_count); 
-p_share = 1-t/nRand;
-test_pos_share = t>tcrit_high;
+% B) Original version flipping the curves (2 sided)
+% Calculate the dominant sign based on the flipped curves (edom)
+edom = nan(nSpec,nRand);
+if sign_orig == 1
+    edom(d_2s >= 0) = 1;
+    edom(d_2s < 0) = 0;
+else
+    edom(d_2s >= 0) = 0;
+    edom(d_2s < 0) = 1;
+end
+sig_freq = bf_rand > 3;
+sig_dom = and(sig_freq,edom);
+sig_dom_freq = sum(sig_dom);
+t = sum(sig_dom_freq >= BF_orig_count);
+p_share_2s = t/nRand;
+
+% % Old. This only works if sign_orig = 1
+% significant_d_2s = nan(nSpec,nRand); 
+% significant_d_2s(bf_rand>3) = d_2s(bf_rand>3);
+% BF_2s_count = sum(significant_d_2s > 0,1); % Here if you multiply again by sign you are flipping twice
+% t = sum(BF_2s_count>=BF_orig_count); 
+% p_share_2s = t/nRand;
+
+% Check
+find(sig_dom_freq ~= BF_rand_count)
+% find(sig_dom_freq ~= BF_2s_count)
+% Approaches A) and B) yield the same results
+
 
 % Plot the share of significant results test
 figure;

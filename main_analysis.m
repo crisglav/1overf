@@ -18,7 +18,6 @@ addpath('analysis_functions');
 addpath('fooof_matlab');
 
 % Load preprocessing parameters
-% fparams = '../data/blinded/derivatives_v2023_09_28/params.json';
 fparams = '../data/blinded/derivatives_v2023_11_16/params.json';
 params = load_params(fparams);
 
@@ -34,24 +33,24 @@ params.EpochLength = 2;
 params.EpochOverlap = 0.5;
 
 % Create output folders
-params.SourcePath = ['../results/features/source/' num2str(params.EpochLength) 's'];
+params.SourcePath = '../results/features/source/';
 if ~exist(params.SourcePath)
     mkdir(params.SourcePath)
 end
-params.VdataPath = ['../results/features/vdata/' num2str(params.EpochLength) 's'];
+params.VdataPath = '../results/features/vdata/';
 if ~exist(params.VdataPath)
     mkdir(params.VdataPath)
 end
-params.PowerPath = ['../results/features/power/' num2str(params.EpochLength) 's'];
+params.PowerPath = '../results/features/power/';
 if ~exist(params.PowerPath)
     mkdir(params.PowerPath)
 end
-params.FOOOFPath = ['../results/features/fooof_matlab/PFC/' num2str(params.EpochLength) 's'];
+params.FOOOFPath = '../results/features/fooof_matlab/PFC/';
 if ~exist(params.FOOOFPath)
     mkdir(params.FOOOFPath)
 end
 
-save(['../results/features/params_' num2str(params.EpochLength) 's.mat'],'params');
+save('../results/features/params.mat','params');
 %%
 % Load the tsv in which the participant labels are randomized to be
 % completely agnostic to the groups.
