@@ -6,7 +6,7 @@
 % Cristina Gil Avila, 08.11.2023
 
 % define and create output folder
-datapath = '/rechenmagd3/Experiments/2023_1overf/results_v4/sca';
+datapath = '/rechenmagd3/Experiments/2023_1overf/results_v3/sca';
 figures_folder = '../results_v3/figures/sca_inference/';
 if ~exist(figures_folder,'dir')
     mkdir(figures_folder);
@@ -20,9 +20,6 @@ results_orig = readtable(fullfile(datapath,'specs_bf.txt'));
 [d_orig, ix] = sort(results_orig.effect_size);
 bf_temp = results_orig.bayes_factor;
 bf_orig = bf_temp(ix); % Sort according the effect size
-pvalues_temp = results_orig.p_value;
-pvalues_orig = pvalues_temp(ix);
-
 % Predominant direction of effect for the original data
 pos = sum(d_orig > 0);
 neg = sum(d_orig < 0);
@@ -35,7 +32,6 @@ end
 % LOAD RANDOMIZED SPECIFICTIONS 
 d_rand = nan(nSpec,nRand);
 bf_rand = nan(nSpec,nRand);
-pvalues_rand = nan(nSpec,nRand);
 sign = nan(1,nRand);
 for iRand=1:nRand
     % load statistics of randomizations
@@ -43,17 +39,13 @@ for iRand=1:nRand
     [d_rand(:,iRand),ix] = sort(results.effect_size);
     bf_temp = results.bayes_factor;
     bf_rand(:,iRand) = bf_temp(ix);
-    pvalues_temp = results.p_value;
-    pvalues_rand(:,iRand) = pvalues_temp(ix);
     
     % Calculate the dominant sign of effects for each randomization
-    pos = sum(d_rand(:,iRand) > 0);
-    if (pos/nSpec) > 0.5
-        sign(iRand) = 1;
-    elseif (pos/nSpec) < 0.5
+    pos = sum(d_rand(:,iRand) >= 0);
+    if (pos/nSpec) < 0.5
         sign(iRand) = -1;
     else
-        sign(iRand) = sign_orig; % if there is no dominant sign of effects, assume direction of original effect
+        sign(iRand) = 1;
     end
 end
 % Flip the curves that do not have the dominant sign. The dominant sign is
@@ -97,91 +89,87 @@ for iRand = 1:nRand
     bf_rand(:,iRand)   = bf_temp(ix);
 
     % calculate the dominant sign of effects for each randomization
-    pos = sum(d_rand(:,iRand) > 0);
+    pos = sum(d_rand(:,iRand) >= 0);
     if (pos/nSpec) > 0.5
         sign(iRand) = 1;
-    elseif (pos/nSpec) < 0.5
-        sign(iRand) = -1;
     else
-        sign(iRand) = sign_orig; % if there is no dominant sign of effects, assume direction of original effect
+        sign(iRand) = -1;
     end
 end
 d_2s = d_rand.*sign*sign_orig;
 %% INFERENTIAL TESTS
 
-% 1. TEST OF MEDIAN EFFECT SIZE
-% ===================================================================
+% MEDIAN TEST
+% ===========================================================================
+% A) Not flipping version
+% Note: The distribution median_d_rand is centered around 0 by
+% construction
+median_d_rand = median(d_rand); % sorting here is not needed for the test, just for plotting tcrit
+if median(d_orig)>=0
+    t = sum(median_d_rand >= median(d_orig)) + sum(median_d_rand <= -median(d_orig));
+else
+    t = sum(median_d_rand <= median(d_orig)) + sum(median_d_rand >= -median(d_orig));
+end
+p_median = t/nRand;
 
-% One-sided test
-% ==============
-% calculate p-value as percentage of randomizations with median
-% effects size larger/smaller than original effect size - direction
-% depends on sign of the original effect size
-median_d_orig = median(d_orig);
-median_d_rand = median(d_rand);
+
+% B) Original version flipping the curves(2 sided)
+median_d_rand_2s = median(d_2s); % For the test data is not sorted (plot 2), but the papers' plot is sorted (plot 6)
+% You have to decide whether to test if the median value is greater as
+% observed or smaller as observed based on the orig_sign.
 if sign_orig == 1
-    t = sum(median_d_rand >= median_d_orig);
-elseif sign_orig == -1
-    t = sum(median_d_rand <= median_d_orig);
+    % Number of simulations with median value at least as great as observed
+    t = sum(median_d_rand_2s>=median(d_orig));
+elseif sign_orig == -1 
+    % Number of simulations with median value at least as smaller as observed
+    t = sum(median_d_rand_2s<=median(d_orig));
+end
+p_median_2s = t/nRand;
+
+% % Checks
+% find(abs(median_d_rand) ~= abs(median_d_rand_2s))
+% x = median_d_rand_2s>=median(d_orig);
+% y = or(median_d_rand >= median(d_orig),median_d_rand <= -median(d_orig));
+% find(x~=y)
+
+% C) One sided
+if sign_orig == 1
+    t = sum(median_d_rand >= median(d_orig));
+elseif sign_orig == -1 
+    t = sum(median_d_rand <= median(d_orig));
 end
 p_median_1s = t/nRand;
 
-% Two-sided test
-% ==============
-% calculate p-value as percentage of randomizations with median
-% effects size more extreme than original effect size on both ends
-% of the distribution of median effect sizes
-t = sum(abs(median_d_rand) >= abs(median_d_orig));
-p_median_2s = t/nRand;
+% % Last option, for completeness (Same result as original version because when we compute the median the data has to be sorted)
+% median_d_rand_2s_sorted = sort(median(sort(d_2s)));
+% t = sum(median_d_rand_2s_sorted>=median(d_orig));
+% p_median_sorted = t/nRand;
 
-% Test flipping the curves (2 sided)
-% ==============
-% This test is conceptually the same as the two-sided test.
-median_d_rand_2s = median(d_2s);
-if sign_orig == 1
-    t = sum(median_d_rand_2s >= median_d_orig);
-elseif sign_orig == -1 
-    t = sum(median_d_rand_2s <= median_d_orig);
-end
-p_median_flip = t/nRand;
-
-
-% 2. TEST OF SHARE OF 'SIGNIFICANT' RESULTS (HERE SIGNIFICANT: BF > 3)
-% ====================================================================
+% SHARE OF DOMINANT AND SIGNIFICANT RESULTS TEST
+% ===========================================================================
 % Extract the effects (d) of the 'significant' specifications
-significant_d_orig = d_orig(bf_orig > 3);
+significant_d_orig = d_orig(bf_orig>3);
 % Count only the significant specifications that have the same sign as the
 % dominant curve effect
 if ~isempty(significant_d_orig)
-    BF_orig_count = sum((significant_d_orig * sign_orig) > 0);
+    BF_orig_count = sum((significant_d_orig * sign_orig)>0);
 else
     BF_orig_count = 0;
 end
+
+% A) Not flipping version.
 % Extract the effects of 'significant' specifications for all
 % randomizations
 significant_d_rand = nan(nSpec,nRand); 
-significant_d_rand(bf_rand > 3) = d_rand(bf_rand > 3);
-
-% One-sided test
-% ==============
-% Count the significant specifications that have the same sign
-% as the dominant curve effect from the original curve (!)
-BF_rand_count = sum((significant_d_rand * sign_orig) > 0,1);
+significant_d_rand(bf_rand>3) = d_rand(bf_rand>3);
+% Count only the significant specifications that have the same sign as the
+% dominant curve effect
+BF_rand_count = sum((significant_d_rand .* sign) >0,1);
+% tcrit_high = sum(BF_rand_count <= prctile(BF_rand_count,95));
 t = sum(BF_rand_count>=BF_orig_count); 
-p_share_1s = t/nRand;
+p_share = t/nRand;
 
-% Two-sided test
-% ==============
-% For each randomization, count the significant specifications
-% that have the same sign as the dominant curve effect of that
-% randomization (!)
-BF_rand_count = sum((significant_d_rand .* sign) > 0,1);
-t = sum(BF_rand_count>=BF_orig_count); 
-p_share_2s = t/nRand;
-
-% Test flipping the curves (2 sided)
-% ==============
-% This test is conceptually the same as the two-sided test.
+% B) Original version flipping the curves (2 sided)
 % Calculate the dominant sign based on the flipped curves (edom)
 edom = nan(nSpec,nRand);
 if sign_orig == 1
@@ -195,55 +183,61 @@ sig_freq = bf_rand > 3;
 sig_dom = and(sig_freq,edom);
 sig_dom_freq = sum(sig_dom);
 t = sum(sig_dom_freq >= BF_orig_count);
-p_share_flip = t/nRand;
-
-
-% 3. TEST OF AGGREGATED P-VALUES
-% =================================================================
-% For each randomization average pvalues following the Stouffer's method.
-% First get z-scores for each pvalue and average across specifications
-% Pvalues are diveded by two because the original ttests between patients
-% and healthy participants was two-sided.
-z_temp = norminv(pvalues_orig./2);
-z_orig = sum(z_temp)/sqrt(nSpec);
-
-z_temp = norminv(pvalues_rand./2);
-z_rand = sum(z_temp,1)./sqrt(nSpec);
-
-% One-sided test
-% ==============
-% calculate p-value as percentage of randomizations with average z value
-% larger/smaller than original average z value - direction
-% depends on sign of the original z value
-if z_orig > 0
-    t = sum(z_rand >= z_orig);
-elseif z_orig < 0
-    t = sum(z_rand <= z_orig);
-else
-    t = nan;
-end
-p_share_1s = t/nRand;
-
-% Two-sided test
-% ==============
-% calculate p-value as percentage of randomizations with average z value 
-% more extreme than original average z value on both ends of the distribution of z
-% values rand
-t = sum(abs(z_rand) >= abs(z_orig));
 p_share_2s = t/nRand;
 
-% Test flipping the curves (2 sided)
-% ==============
-pvalues_2s = pvalues_rand.*sign;
-z_temp = norminv(pvalues_2s./2);
-z_rand_2s = sum(z_temp,1)./sqrt(nSpec);
+% % Old. This only works if sign_orig = 1
+% significant_d_2s = nan(nSpec,nRand); 
+% significant_d_2s(bf_rand>3) = d_2s(bf_rand>3);
+% BF_2s_count = sum(significant_d_2s > 0,1); % Here if you multiply again by sign you are flipping twice
+% t = sum(BF_2s_count>=BF_orig_count); 
+% p_share_2s = t/nRand;
 
-if sign_orig == 1
-    t = sum(z_rand_2s >= z_orig);
-elseif sign_orig == -1 
-    t = sum(z_rand_2s <= z_orig);
-end
-p_share_flip = t/nRand;
+% Check
+find(sig_dom_freq ~= BF_rand_count)
+% find(sig_dom_freq ~= BF_2s_count)
+% Approaches A) and B) yield the same results
+
+
+% Plot the share of significant results test
+figure;
+histogram(BF_rand_count)
+hold on
+x1 = xline(BF_orig_count,'k','LineWidth',2);
+hold on
+x2 = xline(prctile(BF_rand_count,5),'r');
+xlabel('Number of significant specifications with an effect in the dominant direction')
+ylabel('Randomizations')
+legend([x1, x2],'observed number of significant specifications','critical statistic 5%')
+title('Share of significant specifications test');
+
+
+
+% AGGREGATE ALL BF TEST
+% ==========================================================================
+% We have to log(BF) before averaging to account for very small BF
+% indicating strong effect in favor of the null
+avgBF_orig = mean(log(bf_orig));
+avgBF_rand = sort(mean(log(bf_rand),1));
+tcrit_high = sum(avgBF_rand <= prctile(avgBF_rand,95));
+% Indication of a positive effect (observed BF higher than the distribution of
+% random BF)
+t = sum(avgBF_orig>avgBF_rand);
+% Indication of a null effect (obseved BF lower than the distribution of
+% random BF)
+% t = sum(avgBF_orig<avgBF_rand);
+% How to make this test two-sided??? 
+p_aggregateBF = 1-t/nRand;
+
+figure;
+histogram(avgBF_rand)
+hold on
+x1 = xline(avgBF_orig,'k','LineWidth',2);
+hold on
+x2 = xline(prctile(avgBF_rand,95),'r');
+xlabel('Average logBF across specifications')
+ylabel('Randomizations')
+legend([x1, x2],'observed avg logBF across specifications','critical statistic 5%')
+title('Aggregated BF test')
 
 
 

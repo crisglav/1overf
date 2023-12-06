@@ -10,7 +10,7 @@ addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
 ft_defaults;
 addpath('analysis_functions');
 addpath('fooof_matlab');
-run('../toolboxes/bayes_factor/installBayesFactor.m')
+% run('../toolboxes/bayes_factor/installBayesFactor.m')
 
 % Load parameter files and define paths
 load('../results/features/params.mat');
@@ -202,13 +202,13 @@ for iRand=start_rand:nRand
             %         close;
 
         end
-        % Statistical test: differences in aperiodic component between groups
-        [bayesfactor(iSpec),p(iSpec)] = bf.ttest2(exp(iSpec,hc_mask),exp(iSpec,pa_mask));
-        % Effect size (hedge's g and confidence interval (works from ML22a onwards)
-        d = meanEffectSize(exp(iSpec,hc_mask),exp(iSpec,pa_mask),Effect='cohen',ConfidenceIntervalType='bootstrap',NumBootstraps=1000);%    Works in ML2022a onwards
-        effect(iSpec) = d.Effect;
-        ci_inf(iSpec) = d.ConfidenceIntervals(1);
-        ci_sup(iSpec) = d.ConfidenceIntervals(2);
+%         % Statistical test: differences in aperiodic component between groups
+%         [bayesfactor(iSpec),p(iSpec)] = bf.ttest2(exp(iSpec,hc_mask),exp(iSpec,pa_mask));
+%         % Effect size (hedge's g and confidence interval (works from ML22a onwards)
+%         d = meanEffectSize(exp(iSpec,hc_mask),exp(iSpec,pa_mask),Effect='cohen',ConfidenceIntervalType='bootstrap',NumBootstraps=1000);%    Works in ML2022a onwards
+%         effect(iSpec) = d.Effect;
+%         ci_inf(iSpec) = d.ConfidenceIntervals(1);
+%         ci_sup(iSpec) = d.ConfidenceIntervals(2);
 
         t2 = toc(t1);
         fprintf(fid,'Specification %d took %.2f seconds \n',[iSpec t2]);
@@ -218,18 +218,18 @@ for iRand=start_rand:nRand
     fprintf(fid,'The randomization %d took %.2f minutes \n',[iRand t02/60]);
 
     % Save results
-    results = s;
-    results.bayes_factor = bayesfactor;
-    results.p_value = p;
-    results.effect_size = effect;
-    results.ci_inf = ci_inf;
-    results.ci_sup = ci_sup;
+%     results = s;
+%     results.bayes_factor = bayesfactor;
+%     results.p_value = p;
+%     results.effect_size = effect;
+%     results.ci_inf = ci_inf;
+%     results.ci_sup = ci_sup;
     if iRand ==0
-        writetable(results,fullfile(results_path,'specs_bf.txt'),'Delimiter',',');
-        save(fullfile(results_path,'specs_ap_exp.mat'),'exp','r_squared','mae','succeed');
+%         writetable(results,fullfile(results_path,'specs_bf.txt'),'Delimiter',',');
+        save(fullfile(results_path,'specs_ap_exp.mat'),'exp','pa_mask','hc_mask','r_squared','mae','succeed');
     else
-        writetable(results,fullfile(results_path,sprintf('specs_bf_rand%.3d.txt',iRand)),'Delimiter',',');
-        save(fullfile(results_path,sprintf('specs_ap_exp_rand%.3d.mat',iRand)),'exp','r_squared','mae','succeed');
+%         writetable(results,fullfile(results_path,sprintf('specs_bf_rand%.3d.txt',iRand)),'Delimiter',',');
+        save(fullfile(results_path,sprintf('specs_ap_exp_rand%.3d.mat',iRand)),'exp','pa_mask','hc_mask','r_squared','mae','succeed');
     end
 
 end
