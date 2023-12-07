@@ -6,7 +6,7 @@
 #install.packages("BayesFactor")
 library(BayesFactor)
 # set working directory
-setwd('/rechenmagd3/Experiments/2023_1overf/results/sca/Rinteface/')
+setwd('/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface/')
 
 partTab <- read.csv(file = 'tempTTest.csv', head=T)
 datX = partTab$X[!is.na(partTab$X)]

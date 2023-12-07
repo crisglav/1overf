@@ -5,17 +5,19 @@
 % define and create output folder
 datapath = '/rechenmagd3/Experiments/2023_1overf/results/sca';
 addpath('Rinterface');
-run('../toolboxes/bayes_factor/installBayesFactor.m')
+% run('../toolboxes/bayes_factor/installBayesFactor.m')
 
 % Hardcoded number of randomizations and specifications
 nRand = 500;
 nSpec = 48;
+load(fullfile(datapath,sprintf('specs_ap_exp.mat')));
 
 for iRand=1:nRand
     % load statistics of randomizations
     load(fullfile(datapath,sprintf('specs_ap_exp_rand%.3d.mat',iRand)));
-    hc = exp(hc_mask);
-    pa = exp(pa_mask);
+    iSpec = 1;
+    hc = exp(iSpec,hc_mask);
+    pa = exp(iSpec,pa_mask);
     
     % Frequentist ttest
     [~,p,ci,stats] = ttest2(hc,pa);

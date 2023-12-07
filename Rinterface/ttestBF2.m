@@ -17,14 +17,15 @@ end
 
 
 tabXY = array2table(datComb, 'VariableNames', {'X', 'Y'});
-writetable(tabXY, '/rechenmagd3/Experiments/2023_1overf/results/sca/Rinteface/tempTTest.csv')
+writetable(tabXY, '/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface/tempTTest.csv')
 
 % execute system command
-system('/sw/R/xenial/4.0.1/bin/Rscript /rechenmagd3/Experiments/2023_1overf/code/Rinteface/ttestBF24Matlab.R');
+system('export R_LIBS_USER=/rechenmagd4/Cristina/Rpackages/4.2.1; /sw/R/xenial/4.0.1/bin/Rscript /rechenmagd3/Experiments/2023_1overf/code/Rinterface/ttestBF24Matlab.R');
+
 pause(3);
 
-resTab = readtable('tempTTestRes.csv');
+resTab = readtable('/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface/tempTTestRes.csv');
 
-delete('/rechenmagd3/Felix/Projects/chronic_pain_networks/analysis/Rinterface/tempTTest.csv')
-delete('/rechenmagd3/Felix/Projects/chronic_pain_networks/analysis/Rinterface/tempTTestRes.csv')
+delete('/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface/tempTTest.csv')
+delete('/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface/tempTTestRes.csv')
 end
