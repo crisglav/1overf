@@ -27,8 +27,8 @@ results <- results %>%
                                   TRUE ~ "darkgrey"))
 
 # select data of  highlighted specifications for highlighting in plot
-highlightSpec = 8;
-indexhighlightedSpecs = which(results$spec_id %in% c(8))
+highlightSpec = 1;
+indexhighlightedSpecs = which(results$spec_id %in% c(1))
 effect_size = results$effect_size[indexhighlightedSpecs]
 confLow = results$ci_inf[indexhighlightedSpecs] # fake confidence intervals
 confHigh = results$ci_sup[indexhighlightedSpecs] # fake confidence intervals
@@ -61,7 +61,7 @@ p1 <-  results %>%
 
 
 ########### plot choices ###########################
-choices = c("taper", "zero_padding", "average_psd", "fooof_range", "fooof_knee")
+choices = c("epoch_length", "taper", "average_psd", "fooof_range", "fooof_knee")
 
 aux <- results %>%
   tidyr::gather(key, value, choices) %>% 
