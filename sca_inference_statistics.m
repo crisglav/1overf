@@ -200,10 +200,10 @@ p_share_flip = t/nRand;
 
 % 3. TEST OF AGGREGATED P-VALUES
 % =================================================================
-% For each randomization average pvalues following the Stouffer's method.
+% For each randomization, average pvalues following the Stouffer's method.
 % First get z-scores for each pvalue and average across specifications
-% Pvalues are diveded by two because the original ttests between patients
-% and healthy participants was two-sided.
+% Pvalues are diveded by two because the original t-tests between patients
+% and healthy participants were two-sided.
 z_temp = norminv(pvalues_orig./2);
 z_orig = sum(z_temp)/sqrt(nSpec);
 
