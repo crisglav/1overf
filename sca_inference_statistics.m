@@ -3,26 +3,28 @@
 % Based on Elisabeth's May script
 % /rechenmagd4/Experiments/2020_10_alpha_peak_frequency/code/matlab/functions/APF_RQ2_S5_inferentialCurve_statistics.m
 % 
-% Cristina Gil Avila, 08.11.2023
+% Cristina Gil Avila, 08.11.2023, TUM
 
 % define and create output folder
-datapath = '/rechenmagd3/Experiments/2023_1overf/results_v4/sca';
+datapath = '/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface';
 figures_folder = '../results_v3/figures/sca_inference/';
 if ~exist(figures_folder,'dir')
     mkdir(figures_folder);
 end
+
 % Hardcoded number of randomizations and specifications
 nRand = 500;
 nSpec = 48;
+% Hardcoded direction of hypothesis
+tail = 'both'; % 'right', 'both'
 
-% LOAD ORIGINAL CURVE
-results_orig = readtable(fullfile(datapath,'specs_bf.txt'));
-[d_orig, ix] = sort(results_orig.effect_size);
-bf_temp = results_orig.bayes_factor;
+%% LOAD ORIGINAL CURVE
+results_orig = readtable(fullfile(datapath,'stats_orig.csv'));
+[d_orig, ix] = sort(results_orig.d);
+bf_temp = results_orig.BF;
 bf_orig = bf_temp(ix); % Sort according the effect size
-pvalues_temp = results_orig.p_value;
+pvalues_temp = results_orig.pvalue;
 pvalues_orig = pvalues_temp(ix);
-
 % Predominant direction of effect for the original data
 pos = sum(d_orig > 0);
 neg = sum(d_orig < 0);
@@ -39,11 +41,11 @@ pvalues_rand = nan(nSpec,nRand);
 sign = nan(1,nRand);
 for iRand=1:nRand
     % load statistics of randomizations
-    results = readtable(fullfile(datapath,sprintf('specs_bf_rand%.3d.txt',iRand)));
-    [d_rand(:,iRand),ix] = sort(results.effect_size);
-    bf_temp = results.bayes_factor;
+    results = readtable(fullfile(datapath,sprintf('stats_rand%.3d.csv',iRand)));
+    [d_rand(:,iRand),ix] = sort(results.d);
+    bf_temp = results.BF;
     bf_rand(:,iRand) = bf_temp(ix);
-    pvalues_temp = results.p_value;
+    pvalues_temp = results.pvalue;
     pvalues_rand(:,iRand) = pvalues_temp(ix);
     
     % Calculate the dominant sign of effects for each randomization
@@ -60,79 +62,126 @@ end
 % based on the original curve.
 d_2s = d_rand.*sign*sign_orig;
 
-%% LOAD ELISABETHS DATA
-nRand = 500;
-nSpec = 72;
+% %% LOAD ORIGINAL CURVE (OLD VERSION)
+% results_orig = readtable(fullfile(datapath,'specs_bf.txt'));
+% [d_orig, ix] = sort(results_orig.effect_size);
+% bf_temp = results_orig.bayes_factor;
+% bf_orig = bf_temp(ix); % Sort according the effect size
+% pvalues_temp = results_orig.p_value;
+% pvalues_orig = pvalues_temp(ix);
+% 
+% % Predominant direction of effect for the original data
+% pos = sum(d_orig > 0);
+% neg = sum(d_orig < 0);
+% if pos >= neg
+%     sign_orig = 1;
+% elseif neg > pos
+%     sign_orig = -1;
+% end
+% 
+% % LOAD RANDOMIZED SPECIFICTIONS 
+% d_rand = nan(nSpec,nRand);
+% bf_rand = nan(nSpec,nRand);
+% pvalues_rand = nan(nSpec,nRand);
+% sign = nan(1,nRand);
+% for iRand=1:nRand
+%     % load statistics of randomizations
+%     results = readtable(fullfile(datapath,sprintf('specs_bf_rand%.3d.txt',iRand)));
+%     [d_rand(:,iRand),ix] = sort(results.effect_size);
+%     bf_temp = results.bayes_factor;
+%     bf_rand(:,iRand) = bf_temp(ix);
+%     pvalues_temp = results.p_value;
+%     pvalues_rand(:,iRand) = pvalues_temp(ix);
+%     
+%     % Calculate the dominant sign of effects for each randomization
+%     pos = sum(d_rand(:,iRand) > 0);
+%     if (pos/nSpec) > 0.5
+%         sign(iRand) = 1;
+%     elseif (pos/nSpec) < 0.5
+%         sign(iRand) = -1;
+%     else
+%         sign(iRand) = sign_orig; % if there is no dominant sign of effects, assume direction of original effect
+%     end
+% end
+% % Flip the curves that do not have the dominant sign. The dominant sign is
+% % based on the original curve.
+% d_2s = d_rand.*sign*sign_orig;
 
-% Load original curve
-datapath = '/rechenmagd4/Experiments/2020_10_alpha_peak_frequency/results/stats/';
-results_orig = readtable(fullfile(datapath,'results_RQ2_session1_all_specs_orig_stats.csv'));
-rowsElec = find(results_orig.electrodes == "global");
-[d_orig, ix]= sort(results_orig.R(rowsElec,:));
-bf_temp = results_orig.BF10(rowsElec,:);
-bf_orig = bf_temp(ix);
-% Predominant direction of effect for the original data
-pos = sum(d_orig > 0);
-neg = sum(d_orig < 0);
-if pos >= neg
-    sign_orig = 1;
-elseif neg > pos
-    sign_orig = -1;
-end
-
-% LOAD RANDOMIZED SPECIFICTIONS
-% create some variables for collection of results
-d_rand  =  nan(nSpec,nRand);
-bf_rand    = nan(nSpec,nRand);
-
-for iRand = 1:nRand
-
-    % load statistics of randomizations
-    results = readtable([datapath 'results_RQ2_session1_all_specs_rand' num2str(iRand) '_stats.csv']);
-    rowsElec = find(results.electrodes == "global");
-    % sort according to effect size
-    [d_rand(:,iRand), ix] = sort(results.R(rowsElec,:));
-    % again, sort Bayes Factors in same way to keep assignment
-    bf_temp = results.BF10(rowsElec,:);
-    bf_rand(:,iRand)   = bf_temp(ix);
-
-    % calculate the dominant sign of effects for each randomization
-    pos = sum(d_rand(:,iRand) > 0);
-    if (pos/nSpec) > 0.5
-        sign(iRand) = 1;
-    elseif (pos/nSpec) < 0.5
-        sign(iRand) = -1;
-    else
-        sign(iRand) = sign_orig; % if there is no dominant sign of effects, assume direction of original effect
-    end
-end
-d_2s = d_rand.*sign*sign_orig;
+% %% LOAD ELISABETHS DATA
+% nRand = 500;
+% nSpec = 72;
+% 
+% % Load original curve
+% datapath = '/rechenmagd4/Experiments/2020_10_alpha_peak_frequency/results/stats/';
+% results_orig = readtable(fullfile(datapath,'results_RQ2_session1_all_specs_orig_stats.csv'));
+% rowsElec = find(results_orig.electrodes == "global");
+% [d_orig, ix]= sort(results_orig.R(rowsElec,:));
+% bf_temp = results_orig.BF10(rowsElec,:);
+% bf_orig = bf_temp(ix);
+% % Predominant direction of effect for the original data
+% pos = sum(d_orig > 0);
+% neg = sum(d_orig < 0);
+% if pos >= neg
+%     sign_orig = 1;
+% elseif neg > pos
+%     sign_orig = -1;
+% end
+% 
+% % LOAD RANDOMIZED SPECIFICTIONS
+% % create some variables for collection of results
+% d_rand  =  nan(nSpec,nRand);
+% bf_rand    = nan(nSpec,nRand);
+% 
+% for iRand = 1:nRand
+% 
+%     % load statistics of randomizations
+%     results = readtable([datapath 'results_RQ2_session1_all_specs_rand' num2str(iRand) '_stats.csv']);
+%     rowsElec = find(results.electrodes == "global");
+%     % sort according to effect size
+%     [d_rand(:,iRand), ix] = sort(results.R(rowsElec,:));
+%     % again, sort Bayes Factors in same way to keep assignment
+%     bf_temp = results.BF10(rowsElec,:);
+%     bf_rand(:,iRand)   = bf_temp(ix);
+% 
+%     % calculate the dominant sign of effects for each randomization
+%     pos = sum(d_rand(:,iRand) > 0);
+%     if (pos/nSpec) > 0.5
+%         sign(iRand) = 1;
+%     elseif (pos/nSpec) < 0.5
+%         sign(iRand) = -1;
+%     else
+%         sign(iRand) = sign_orig; % if there is no dominant sign of effects, assume direction of original effect
+%     end
+% end
+% d_2s = d_rand.*sign*sign_orig;
 %% INFERENTIAL TESTS
 
 % 1. TEST OF MEDIAN EFFECT SIZE
 % ===================================================================
-
-% One-sided test
-% ==============
-% calculate p-value as percentage of randomizations with median
-% effects size larger/smaller than original effect size - direction
-% depends on sign of the original effect size
 median_d_orig = median(d_orig);
 median_d_rand = median(d_rand);
-if sign_orig == 1
-    t = sum(median_d_rand >= median_d_orig);
-elseif sign_orig == -1
-    t = sum(median_d_rand <= median_d_orig);
+switch tail
+    case 'left'
+        % One-sided test
+        % ==============
+        % calculate p-value as percentage of randomizations with median
+        % effects size smaller than original effect size
+        t = sum(median_d_rand <= median_d_orig);
+    case 'right'
+        % One-sided test
+        % ==============
+        % calculate p-value as percentage of randomizations with median
+        % effects size larger than original effect size
+        t = sum(median_d_rand >= median_d_orig);
+    case 'both'
+        % Two-sided test
+        % ==============
+        % calculate p-value as percentage of randomizations with median
+        % effects size more extreme than original effect size on both ends
+        % of the distribution of median effect sizes
+        t = sum(abs(median_d_rand) >= abs(median_d_orig));
 end
-p_median_1s = t/nRand;
-
-% Two-sided test
-% ==============
-% calculate p-value as percentage of randomizations with median
-% effects size more extreme than original effect size on both ends
-% of the distribution of median effect sizes
-t = sum(abs(median_d_rand) >= abs(median_d_orig));
-p_median_2s = t/nRand;
+p_median = t/nRand;
 
 % Test flipping the curves (2 sided)
 % ==============
@@ -210,27 +259,29 @@ z_orig = sum(z_temp)/sqrt(nSpec);
 z_temp = norminv(pvalues_rand./2);
 z_rand = sum(z_temp,1)./sqrt(nSpec);
 
-% One-sided test
-% ==============
-% calculate p-value as percentage of randomizations with average z value
-% larger/smaller than original average z value - direction
-% depends on sign of the original z value
-if z_orig > 0
-    t = sum(z_rand >= z_orig);
-elseif z_orig < 0
-    t = sum(z_rand <= z_orig);
-else
-    t = nan;
+switch tail
+    case 'left'
+        % One-sided test
+        % ==============
+        % calculate p-value as percentage of randomizations with average z value
+        % smaller than original average z value
+        t = sum(z_rand <= z_orig);
+    case 'right'
+        % One-sided test
+        % ==============
+        % calculate p-value as percentage of randomizations with average z value
+        % larger than original average z value
+        t = sum(z_rand >= z_orig);
+    case 'both'
+        % Two-sided test
+        % ==============
+        % calculate p-value as percentage of randomizations with average z value
+        % more extreme than original average z value on both ends of the distribution of z
+        % values rand
+        t = sum(abs(z_rand) >= abs(z_orig));
 end
-p_share_1s = t/nRand;
+p_aggregate = t/nRand;
 
-% Two-sided test
-% ==============
-% calculate p-value as percentage of randomizations with average z value 
-% more extreme than original average z value on both ends of the distribution of z
-% values rand
-t = sum(abs(z_rand) >= abs(z_orig));
-p_share_2s = t/nRand;
 
 % Test flipping the curves (2 sided)
 % ==============
@@ -243,7 +294,7 @@ if sign_orig == 1
 elseif sign_orig == -1 
     t = sum(z_rand_2s <= z_orig);
 end
-p_share_flip = t/nRand;
+p_aggregate_flip = t/nRand;
 
 
 
