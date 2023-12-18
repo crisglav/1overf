@@ -161,10 +161,10 @@ switch tail
         % ==============
         % calculate p-value as percentage of randomizations with average z value
         % larger than original average z value. We do 1-pvalue to get positive zscores.
-        z_temp = norminv(1-pvalues_orig);
+        z_temp = norminv(1-p_orig);
         z_orig = sum(z_temp)/sqrt(nSpec);
 
-        z_temp = norminv(1-pvalues_rand);
+        z_temp = norminv(1-p_rand);
         z_rand = sum(z_temp,1)./sqrt(nSpec);
 
         t = sum(z_rand >= z_orig);
@@ -176,10 +176,10 @@ switch tail
         % more extreme than original average z value on both ends of the distribution of z
         % values rand. Pvalues are diveded by two because the original t-tests were 
         % two-sided.  We do 1-pvalue to get positive zscores.
-        z_temp = norminv(1-(pvalues_orig./2));
+        z_temp = norminv(1-(p_orig./2));
         z_orig = sum(z_temp)/sqrt(nSpec);
 
-        z_temp = norminv(1-(pvalues_rand./2));
+        z_temp = norminv(1-(p_rand./2));
         z_rand = sum(z_temp,1)./sqrt(nSpec);
 
         t = sum(z_rand >= z_orig);
