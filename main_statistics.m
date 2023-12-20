@@ -2,7 +2,7 @@
 clear all, close all
 
 % Add statisical functions and plotting functions
-run('../toolboxes/bayes_factor/installBayesFactor.m')
+% run('../toolboxes/bayes_factor/installBayesFactor.m')
 addpath('../toolboxes/raincloudplots');
 addpath('fooof_matlab');
 
@@ -118,10 +118,10 @@ xlabel('Exponents');
 box off
 
 % Hypothesis 1: Bayesian t-test on the aperiodic exponents
-[bf10,p] = bf.ttest2(exponents.PFC(hc_mask),exponents.PFC(pa_mask));
-
-str = {sprintf('BF = %0.3f',bf10),sprintf('p = %0.3f',p)};
-annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on');
+% [bf10,p] = bf.ttest2(exponents.PFC(hc_mask),exponents.PFC(pa_mask));
+% 
+% str = {sprintf('BF = %0.3f',bf10),sprintf('p = %0.3f',p)};
+% annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on');
 
 % Check age and gender covariates ANCOVA in JASP
 participants_sorted.exp_PFC = exponents.PFC';
@@ -152,7 +152,7 @@ set(ax,'YTickLabel',flip(rois));
 xlabel('Exponents');
 title('Aperiodic exponents - ROIs')
 
-% Do statistics in JASP
+% Do statistics in JASP if there is evidence for H1
 % participants_sorted.exp_PFC = exponents.PFC';
 % participants_sorted.exp_S1 = exponents.S1';
 % participants_sorted.exp_VIS = exponents.VIS';
@@ -178,7 +178,7 @@ fooofid = cell2mat(fooofid);
 % Real patients mask
 mask = ismember(fooofid,id);
 % Check that you did it well
-all(ismember(participants_sorted(mask,:).participant_id,patients_sorted.participant_id));
+% all(ismember(participants_sorted(mask,:).participant_id,patients_sorted.participant_id));
 
 % Extract fooof values for the patients
 exp_pa = exponents.PFC(mask);
@@ -195,10 +195,10 @@ title('Correlation aperidoic exponents - pain ratings');
 % Correlate exponents with the pain ratings
 avg_pain = patients_sorted.avg_pain(~isnan(patients_sorted.avg_pain));
 exp_pa = exp_pa(~isnan(patients_sorted.avg_pain))';
-[bf10,r,p] = bf.corr(exp_pa,avg_pain);
-
-str = {sprintf('BF = %0.3f',bf10),sprintf('r = %0.3f',r),sprintf('p = %0.3f',p)};
-annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on','BackgroundColor','w');
+% [bf10,r,p] = bf.corr(exp_pa,avg_pain);
+% 
+% str = {sprintf('BF = %0.3f',bf10),sprintf('r = %0.3f',r),sprintf('p = %0.3f',p)};
+% annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on','BackgroundColor','w');
 
 % Save to JASP
 writetable(patients_sorted, fullfile(stats_path,['patients_PFC_' analysis '.csv']));
