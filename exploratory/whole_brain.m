@@ -1,6 +1,6 @@
 % Estimate the aperiodic component 100 ROIs of all recordings
 % 
-% Pallotti Flaminia, TUM, 30.10.2023
+% Pallotti Flaminia, Cristina Gil, TUM, 30.10.2023
 
 clear all,
 close all;
@@ -107,7 +107,7 @@ end
 % Calculating mean exponent for each ROI, within each group:
 patient_mean_exponents = mean(patients_exponent_values);
 healthy_mean_exponents = mean(healthy_exponent_values);
-exponents_difference = patient_mean_exponents - healthy_mean_exponents; %here there was an abs value. ask Flaminia why.
+exponents_difference = patient_mean_exponents - healthy_mean_exponents;
 
 % Calculating mean offset for each ROI, within each group:
 patient_mean_offset = mean(patients_offset_values);

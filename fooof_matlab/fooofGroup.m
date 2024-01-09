@@ -43,10 +43,7 @@ classdef fooofGroup < fooof
                 obj.group_results{i} = get_results(obj);  
             end
         end
-        
-        function results = get_results(obj)
-            results = get_results@fooof(obj);
-        end
+     
         
     end
 end
