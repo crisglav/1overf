@@ -1,7 +1,10 @@
 classdef fooofGroup < fooof
     properties
         power_spectra
+        ap_fit_group
+        fooofed_spectrum_group
         group_results
+
     end
     
     methods
@@ -40,7 +43,9 @@ classdef fooofGroup < fooof
             for i=1:size(obj.power_spectra,1)
                 obj.power_spectrum = obj.power_spectra(i,:);
                 obj = fit@fooof(obj);
-                obj.group_results{i} = get_results(obj);  
+                obj.group_results{i} = get_results(obj);
+                obj.ap_fit_group(i,:) = obj.ap_fit;
+                obj.fooofed_spectrum_group(i,:) = obj.fooofed_spectrum;
             end
         end
      
