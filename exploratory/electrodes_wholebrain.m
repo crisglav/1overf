@@ -21,10 +21,10 @@ expPath = '../../results/features/electrode_space';
 if ~exist(expPath)
     mkdir(expPath)
 end
-params.Ncores = 15;
-if(isempty(gcp('nocreate')))
-    parObj = parpool(params.Ncores);
-end
+% params.Ncores = 15;
+% if(isempty(gcp('nocreate')))
+%     parObj = parpool(params.Ncores);
+% end
 %% Load the data
 % Load the tsv in which the participant labels are randomized to be
 % completely agnostic to the groups.
@@ -129,6 +129,7 @@ title('PA - HC');
 
 %% Multiplot
 data = load_preprocessed_data(params,'sub-035_task-closed');
+label = data.label;
 layout = ft_prepare_layout([],data);
 
 % Load all power files
@@ -199,77 +200,134 @@ cfg.parameter = 'powspctrm';
 cfg.layout = layout;
 ft_multiplotER(cfg,fm_pa_avg,fm_hc_avg);
 
+%% 
+% load(fullfile(expPath,[bidsID '_fm.mat']));
+
+% Identify in the plot the two lines with flatter and steeper slope
+figure;
+LineList = plot(fm.freq_orig,log10(fm.pow_orig));
+set(LineList, 'ButtonDownFcn',{@myLineCallback, LineList})
+
+function myLineCallback(LineH, EventData, LineList)
+% disp(LineH);
+% disp(get(LineH,'YData'));
+disp(find(LineList == LineH));
+set(LineList,'LineWidth',0.5);
+set(LineH, 'LineWidth', 2.5);
+uistack(LineH, 'top');
+end
+
+
+%% Example plot on two different slopes
+figure;
+tiledlayout(2,2);
+nexttile
+plot(fm.freq_orig,log10(fm.pow_orig(51,:)));
+hold on
+plot(fm.freqs,fm.ap_fit_group(51,:));
+ylim([-3 1.5])
+title(label(51));
+ylabel('log Power');
+xlabel('Frequency');
+str = sprintf('ap exp = %0.2f', fm.group_results{51}.aperiodic_params(end));
+text(40,1,str);
+nexttile
+plot(fm.freq_orig,log10(fm.pow_orig(61,:)));
+hold on
+plot(fm.freqs,fm.ap_fit_group(61,:));
+ylim([-3 1.5])
+title(label(61));
+str = sprintf('ap exp = %0.2f', fm.group_results{61}.aperiodic_params(end));
+text(40,1,str);
+xlabel('Frequency');
+
+
+
+nexttile
+plot(log10(fm.freq_orig),log10(fm.pow_orig(51,:)));
+hold on
+plot(log10(fm.freqs),fm.ap_fit_group(51,:));
+ylim([-3 1.5])
+ylabel('log Power');
+xlabel('log Frequency');
+nexttile
+plot(log10(fm.freq_orig),log10(fm.pow_orig(61,:)));
+hold on
+plot(log10(fm.freqs),fm.ap_fit_group(61,:));
+ylim([-3 1.5])
+xlabel('log Frequency');
+
 %% Cluster-based permutatuion statistics (TO DO)
-
-
-% Load one dataset to get the electrode layout
-data = load_preprocessed_data(params,bidsID);
-
-% Topoplots for both groups
-layout = ft_prepare_layout([],data);
-figure;
-ft_plot_layout(layout);
-
-figure;
-ft_plot_sens(data.elec,'label','yes')
-ft_plot_axes(data.elec)
-
-
-
-% Define neighbours of electrodes (based on Son's code)
-cfg = [];
-cfg.method = 'distance';
-cfg.layout = layout;
-cfg.neighbourdist = 0.18; % this value is taken from Son's code (18 mm)
-neighbours = ft_prepare_neighbours(cfg, data.elec);
-
-
-
-
-
-% From Son
-% computes a single cluster-based permutation test between the power values of 2 groups
-% minimal number of channels for a cluster to be formed: 2
-% cluster alpha = 0.05
-% statistical test alpha = 0.025 (two-sided)
-% based on an independent sample T-test
 % 
-%   input:  - PA: cell array of FieldTrip pow structures for 1st group (patients)
-%           - HC: cell array of FieldTrip pow structures for 2nd group (healthy control)
-%           - params: structure containing all relevant parameters
-%           - startFreq: lower frequency limit
-%           - endFreq: upper frequency limit
-%           - relAbs: 'absolute' or 'relative', flag defining whether to
-%           use the absolute or relative power
-%   output: - stat: FieldTrip structure containing the cluster statistics
 % 
-% Son Ta Dinh, TU Munich, 22.09.2017
-function stat = computeCluster(PA, HC, params, startFreq, endFreq, relAbs)
-cfg = [];
-cfg.method = 'montecarlo';
-if strcmp(relAbs, 'absolute')
-    cfg.parameter = 'powspctrm';
-elseif strcmp(relAbs, 'relative')
-    cfg.parameter = 'relPowspctrm';
-else
-    disp('Default: using absolute power values')
-end
-cfg.correctm = 'cluster';
-cfg.minnbchan = 2;
-cfg.clusteralpha = 0.05;
-cfg.clusterstatistic = 'maxsum';
-cfg.alpha = 0.05/4;
-cfg.tail = 0;
-cfg.correcttail = 'prob';
-cfg.clustertail = 0;
-cfg.numrandomization = params.NREPS;
-cfg.statistic = 'indepsamplesT';
-design = [ones(1,length(PA)), ones(1,length(HC)) + 1];
-cfg.neighbours = params.neighbours;
-cfg.design = design;
-cfg.ivar = 1;
-cfg.frequency = [startFreq endFreq];
-cfg.avgoverfreq = 'yes';
-
-stat = ft_freqstatistics(cfg, PA{:}, HC{:});
-end
+% % Load one dataset to get the electrode layout
+% data = load_preprocessed_data(params,bidsID);
+% 
+% % Topoplots for both groups
+% layout = ft_prepare_layout([],data);
+% figure;
+% ft_plot_layout(layout);
+% 
+% figure;
+% ft_plot_sens(data.elec,'label','yes')
+% ft_plot_axes(data.elec)
+% 
+% 
+% 
+% % Define neighbours of electrodes (based on Son's code)
+% cfg = [];
+% cfg.method = 'distance';
+% cfg.layout = layout;
+% cfg.neighbourdist = 0.18; % this value is taken from Son's code (18 mm)
+% neighbours = ft_prepare_neighbours(cfg, data.elec);
+% 
+% 
+% 
+% 
+% 
+% % From Son
+% % computes a single cluster-based permutation test between the power values of 2 groups
+% % minimal number of channels for a cluster to be formed: 2
+% % cluster alpha = 0.05
+% % statistical test alpha = 0.025 (two-sided)
+% % based on an independent sample T-test
+% % 
+% %   input:  - PA: cell array of FieldTrip pow structures for 1st group (patients)
+% %           - HC: cell array of FieldTrip pow structures for 2nd group (healthy control)
+% %           - params: structure containing all relevant parameters
+% %           - startFreq: lower frequency limit
+% %           - endFreq: upper frequency limit
+% %           - relAbs: 'absolute' or 'relative', flag defining whether to
+% %           use the absolute or relative power
+% %   output: - stat: FieldTrip structure containing the cluster statistics
+% % 
+% % Son Ta Dinh, TU Munich, 22.09.2017
+% function stat = computeCluster(PA, HC, params, startFreq, endFreq, relAbs)
+% cfg = [];
+% cfg.method = 'montecarlo';
+% if strcmp(relAbs, 'absolute')
+%     cfg.parameter = 'powspctrm';
+% elseif strcmp(relAbs, 'relative')
+%     cfg.parameter = 'relPowspctrm';
+% else
+%     disp('Default: using absolute power values')
+% end
+% cfg.correctm = 'cluster';
+% cfg.minnbchan = 2;
+% cfg.clusteralpha = 0.05;
+% cfg.clusterstatistic = 'maxsum';
+% cfg.alpha = 0.05/4;
+% cfg.tail = 0;
+% cfg.correcttail = 'prob';
+% cfg.clustertail = 0;
+% cfg.numrandomization = params.NREPS;
+% cfg.statistic = 'indepsamplesT';
+% design = [ones(1,length(PA)), ones(1,length(HC)) + 1];
+% cfg.neighbours = params.neighbours;
+% cfg.design = design;
+% cfg.ivar = 1;
+% cfg.frequency = [startFreq endFreq];
+% cfg.avgoverfreq = 'yes';
+% 
+% stat = ft_freqstatistics(cfg, PA{:}, HC{:});
+% end
