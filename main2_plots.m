@@ -187,9 +187,9 @@ patients_sorted.exp_PFC = exp_pa';
 % Plotting
 f3 = figure();
 ax = gca;
-scatter(exp_pa,patients_sorted.avg_pain,[],cb(2,:),'filled');
-xlabel('Exponent');
-ylabel('Pain rating');
+scatter(patients_sorted.avg_pain,exp_pa,[],cb(2,:),'filled');
+ylabel('Exponent');
+xlabel('Pain rating');
 title('Correlation aperidoic exponents - pain ratings');
 
 % Correlate exponents with the pain ratings
@@ -204,5 +204,5 @@ exp_pa = exp_pa(~isnan(patients_sorted.avg_pain))';
 writetable(patients_sorted, fullfile(stats_path,['patients_PFC_' analysis '.csv']));
 
 % Save figure
-exportgraphics(f3,fullfile(figures_path,'hypothesis3.jpg'));
+saveas(f3,fullfile(figures_path,'hypothesis3.svg'));
 

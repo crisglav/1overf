@@ -60,7 +60,8 @@ catch
         exponent = nan(1,nROI);
         offset = nan(1,nROI);
 
-        % Looping over each ROI and processing data for each ROI:
+        % Looping over each ROI and processing data for each ROI
+        % FIX - This can be done calling a fooofGroup object
         for iROI = 1:nROI
 
             % Extract power at this ROI
@@ -107,28 +108,20 @@ end
 % Calculating mean exponent for each ROI, within each group:
 patient_mean_exponents = mean(patients_exponent_values);
 healthy_mean_exponents = mean(healthy_exponent_values);
-exponents_difference = patient_mean_exponents - healthy_mean_exponents;
 
 % Calculating mean offset for each ROI, within each group:
 patient_mean_offset = mean(patients_offset_values);
 healthy_mean_offset = mean(healthy_offset_values);
-offsets_difference = patient_mean_offset - healthy_mean_offset;
 
  
 % Figure 1: Exponents mean values Patients vs. Healthy Controls 
 % Figure 2: Difference exponents over 100 ROIs between patients and healthy subjects
 
-[exponents_PvsHC_fig, exponents_difference_fig] = wholebrain_plot(params,patient_mean_exponents, healthy_mean_exponents, exponents_difference); 
-% sgtitle(exponents_PvsHC_fig,'Average aperiodic exponents');
-title(exponents_difference_fig.Children(end), 'Aperiodic exponents PA-HC');
-saveas(exponents_PvsHC_fig,fullfile(figures_path,'wholebrain_exponent_PA_HC.svg'));
-saveas(exponents_difference_fig,fullfile(figures_path,'wholebrain_exponent_diff.svg'));
+[exponents_HCPA_fig] = wholebrain_plot(params, healthy_mean_exponents, patient_mean_exponents); 
+saveas(exponents_HCPA_fig,fullfile(figures_path,'wholebrain_exponent_HC_PA.svg'));
 
 % Figure 3: Offsets mean values Patients vs. Healthy Controls 
 % Figure 4: Difference offsets over 100 ROIs between patients and healthy subjects
 
-[offsets_PvsHC_fig, offsets_difference_fig] = wholebrain_plot(params,patient_mean_offset, healthy_mean_offset, offsets_difference); 
-% sgtitle(offsets_PvsHC_fig, 'Average aperiodic offsets');
-title(exponents_difference_fig.Children(end), 'Aperiodic offsets PA-HC');
-saveas(offsets_PvsHC_fig,fullfile(figures_path,'wholebrain_offset_PA_HC.svg'));
-saveas(offsets_difference_fig,fullfile(figures_path,'wholebrain_offset_diff.svg'));
+[offsets_HCPA_fig] = wholebrain_plot(params, healthy_mean_offset, patient_mean_offset); 
+saveas(offsets_HCPA_fig,fullfile(figures_path,'wholebrain_offset_HC_PA.svg'));

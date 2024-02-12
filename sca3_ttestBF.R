@@ -15,7 +15,7 @@ filepath <- "/rechenmagd3/Experiments/2023_1overf/results/sca"
 nRand = 500
 nSpec = 48
 
-for (iRand in 447:nRand) {
+for (iRand in 1:nRand) {
   
   if (iRand == 0){
     filename <- "specs_ap_exp.mat"
