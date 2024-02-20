@@ -86,7 +86,7 @@ end
 % saveas(f,'Schaefer atlas ROIS.jpeg');
 
 %%
-figure;
+f = figure;
 ft_plot_mesh(vol.bnd(3),'facealpha',0.05,'facecolor',[0.1 0.1 0.1],'edgecolor',[0.5 0.5 0.5],'edgealpha',0.5); % brain
 roi = 'PFC';
 for i=1:length(labels.(roi))
@@ -94,7 +94,8 @@ for i=1:length(labels.(roi))
     idx  = find(cellfun(@(x) contains(x,['_' labels.(roi){i} '_']), sch.(roi).ROIName));
     ft_plot_mesh(pos.PFC(idx,:), 'vertexsize',15, 'vertexcolor','k');
 end
-view(0, 90);
+view(90, 0);
+saveas(f,fullfile('..','..','results','figures','mpfc2.svg'));
 
 
 

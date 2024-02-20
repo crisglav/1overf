@@ -1,4 +1,7 @@
-% Analyze fooof fitting from matlab implementation
+% Prepare the data for statistical analyisis and generate plots for the main analysis
+%
+% Cristina Gil Avila, TUM, 12.02.2024
+
 clear all, close all
 
 % Add statisical functions and plotting functions
@@ -80,57 +83,46 @@ for iRoi=1:length(rois)
     
 end
 
-% Plot model errors and r_squared
-figure;
-tlc = tiledlayout(1,2);
-nexttile
+% % Plot model errors and r_squared
+% figure;
+% tlc = tiledlayout(1,2);
+% nexttile
+% 
+% scatter(1:n,er,'filled');
+% xlabel('Recording');
+% ylabel('error');
+% title('Model error');
+% 
+% nexttile
+% scatter(1:n,r2,'filled');
+% xlabel('Recording');
+% ylabel('R^2');
+% title('R^2');
 
-scatter(1:n,er,'filled');
-xlabel('Recording');
-ylabel('error');
-title('Model error');
+%% Analyses
 
-nexttile
-scatter(1:n,r2,'filled');
-xlabel('Recording');
-ylabel('R^2');
-title('R^2');
-
-%% Analysis
-
-%% Hypothesis 1: differencens in PFC aperiodic exponents between patients and healthy participants
+%% Hypothesis 1: Do aperiodic exponents in the mPFC differ between patients and healthy participants?
 % Plot aperiodic exponents
 cb = lines(2);
 f1 = figure();
 ax = gca;
-h1 = raincloud_plot(exponents.PFC(hc_mask), 'box_on', 1, 'color', cb(1,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .15, 'dot_dodge_amount', 0.15,'box_col_match', 0, ...
-     'cloud_edge_col', cb(1,:),'plot_top_to_bottom',1);
-h2 = raincloud_plot(exponents.PFC(pa_mask), 'box_on', 1, 'color', cb(2,:), 'alpha', 0.5,...
-     'box_dodge', 1, 'box_dodge_amount', .35, 'dot_dodge_amount', .35, 'box_col_match', 0,...
-     'cloud_edge_col', cb(2,:),'plot_top_to_bottom',1);
+h1 = raincloud_plot_vertical(exponents.PFC(hc_mask),'box_dodge',1, 'color', cb(1,:), 'alpha', 0.5, 'box_dodge_amount', 0.5,'dot_dodge_amount',0.5);
+h2 = raincloud_plot_vertical(exponents.PFC(pa_mask), 'box_dodge', 1, 'color', cb(2,:), 'alpha', 0.5, 'box_dodge_amount', 1,'dot_dodge_amount',1);
  
 legend([h1{1} h2{1}], {'HC', 'PA'});
 title('Aperiodic exponents')
-set(ax,'XLim', [0 2], 'YLim', [-1.5 2.5]);
-set(ax,'YTickLabel',[]);
-xlabel('Exponents');
+set(ax,'XTick',[],'XTickLabel',[]);
+ylabel('Exponents');
 box off
 
-% Hypothesis 1: Bayesian t-test on the aperiodic exponents
-% [bf10,p] = bf.ttest2(exponents.PFC(hc_mask),exponents.PFC(pa_mask));
-% 
-% str = {sprintf('BF = %0.3f',bf10),sprintf('p = %0.3f',p)};
-% annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on');
-
-% Check age and gender covariates ANCOVA in JASP
+% Check age covariates with ANCOVA in JASP
 participants_sorted.exp_PFC = exponents.PFC';
 writetable(participants_sorted, fullfile(stats_path,['exp_PFC_' analysis '.csv']));
 
 % Save figure
-exportgraphics(f1,fullfile(figures_path,'hypothesis1.jpg'));
+saveas(f1,fullfile(figures_path,'hypothesis1.svg'));
 
-%% Hypothesis 2: Changes in mPFC exponent are spatially specific for the PFC
+%% Hypothesis 2: Are changes in aperiodic exponents spatially specific for the mPFC?
 
 % Ploting
 % rearrange data
@@ -161,7 +153,7 @@ title('Aperiodic exponents - ROIs')
 % Save figure
 % exportgraphics(f2,fullfile(figures_path,'hypothesis2.jpg'));
 
-%% Hypothesis 3: Exponents correlate with pain in patients
+%% Hypothesis 3: Do aperiodic exponents correlate with pain in patients?
 
 % Sort the patients table
 id = cellfun(@(x) str2double(x(5:7)),patients.participant_id,'UniformOutput',false);
@@ -176,33 +168,75 @@ fooofid = cellfun(@(x) str2double(x(5:7)),{pfc_files.name},'UniformOutput',false
 fooofid = cell2mat(fooofid);
 
 % Real patients mask
-mask = ismember(fooofid,id);
+mask_pa = ismember(fooofid,id);
 % Check that you did it well
 % all(ismember(participants_sorted(mask,:).participant_id,patients_sorted.participant_id));
 
-% Extract fooof values for the patients
-exp_pa = exponents.PFC(mask);
+% Extract aperiodic exponents for the patients
+exp_pa = exponents.PFC(mask_pa);
 patients_sorted.exp_PFC = exp_pa';
 
-% Plotting
-f3 = figure();
-ax = gca;
-scatter(patients_sorted.avg_pain,exp_pa,[],cb(2,:),'filled');
-ylabel('Exponent');
-xlabel('Pain rating');
-title('Correlation aperidoic exponents - pain ratings');
+% Discard the patient from which we don't have a pain rating
+mask = ~isnan(patients_sorted.avg_pain);
+avg_pain = patients_sorted.avg_pain(mask);
+exp_pa = exp_pa(mask)';
+age = patients_sorted.age(mask);
 
-% Correlate exponents with the pain ratings
-avg_pain = patients_sorted.avg_pain(~isnan(patients_sorted.avg_pain));
-exp_pa = exp_pa(~isnan(patients_sorted.avg_pain))';
-% [bf10,r,p] = bf.corr(exp_pa,avg_pain);
-% 
-% str = {sprintf('BF = %0.3f',bf10),sprintf('r = %0.3f',r),sprintf('p = %0.3f',p)};
-% annotation('textbox',[0.15 0.6 0.3 0.3],'String',str,'FitBoxToText','on','BackgroundColor','w');
+% For correlating avg_pain and exp_pa we want to regress out age to account
+% for this covariate.
+% Fit a linear model to the data and obtain the residulas
+model_pain = fitlm(age,avg_pain);
+model_apexp = fitlm(age,exp_pa);
+figure, plot(model_pain);
+figure, plot(model_apexp);
+residuals_pain = model_pain.Residuals.Raw;
+residuals_apexp = model_apexp.Residuals.Raw;
+
+% Scatter plot of residuals
+model_res = fitlm(model_pain.Residuals.Raw, model_apexp.Residuals.Raw);
+f3_0 = figure;
+h = plot(model_res);
+h(1).Marker = 'o';
+h(1).MarkerFaceColor = cb(2,:);
+h(1).MarkerEdgeColor = 'none';
+h(2).Color = [0.7 0.7 0.7];
+h(2).LineWidth = 1.5;
+h(3).Color = [0.7 0.7 0.7];
+h(3).LineWidth = 1.5;
+h(4).Color = [0.7 0.7 0.7];
+h(4).LineWidth = 1.5;
+xlabel('Pain residuals');
+ylabel('Aperiodic exponent residuals');
+title('Correlation aperidoic exponents - pain ratings');
+box off;
+
+% save residuals to the table
+patients_sorted.residuals_pain(mask) = model_pain.Residuals.Raw;
+patients_sorted.residuals_apexp(mask) = model_apexp.Residuals.Raw;
+
+% Scatter plot
+f3 = figure();
+model = fitlm(avg_pain,exp_pa);
+h = plot(model);
+h(1).Marker = 'o';
+h(1).MarkerFaceColor = cb(2,:);
+h(1).MarkerEdgeColor = 'none';
+h(2).Color = [0.7 0.7 0.7];
+h(2).LineWidth = 1.5;
+h(3).Color = [0.7 0.7 0.7];
+h(3).LineWidth = 1.5;
+h(4).Color = [0.7 0.7 0.7];
+h(4).LineWidth = 1.5;
+ylabel('Aperiodic exponent');
+xlabel('Pain rating');
+xlim([1 10])
+title('Correlation aperidoic exponents - pain ratings');
+box off;
 
 % Save to JASP
 writetable(patients_sorted, fullfile(stats_path,['patients_PFC_' analysis '.csv']));
 
 % Save figure
 saveas(f3,fullfile(figures_path,'hypothesis3.svg'));
+saveas(f3_0,fullfile(figures_path,'hypothesis3_residuals.svg'));
 
