@@ -42,6 +42,8 @@ for (iRand in 1:nRand) {
     hc <- hc[is.finite(hc)]
     pa <- pa[is.finite(pa)]
     
+    # Linear regression, group is a dummy variable, age is a covariate
+    
     # Bayesian t-test
     TTestBF = ttestBF(hc, pa, mu = 0, paired = FALSE, rscale = "medium", posterior = FALSE)
     TTestBFSummary = summary(ttestBF(hc, pa, mu = 0, paired = FALSE, rscale = "medium", posterior = TRUE, iteration = 1000))
@@ -67,6 +69,6 @@ for (iRand in 1:nRand) {
   }else{
     csvname <- sprintf("stats_rand%0.3d.csv",iRand)
   }
-  csvpath <- file.path("/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface/",csvname)
+  csvpath <- file.path("/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface",csvname)
   write.csv(resTab, file = csvpath, row.names = FALSE)
 }
