@@ -14,13 +14,12 @@ addpath('fooof_matlab');
 
 % Load parameter files and define paths
 load('../results/features/params.mat');
-figures_path ='../results/figures/';
 results_path = '../results/sca/';
 if ~exist(results_path,'dir')
     mkdir(results_path)
 end
 % Define the number of cores for parallelization
-params.Ncores = 2;
+params.Ncores = 20;
 if(isempty(gcp('nocreate')))
     parObj = parpool(params.Ncores);
 end
@@ -253,7 +252,7 @@ for iSpec=1:nSpec
     
 end
 t02 = toc(t01);
-fprintf(fid,'All the specifications run successfully. It %.2f seconds \n', t1);
+fprintf(fid,'All the specifications run successfully. It took %.2f seconds \n', t02);
 save(fullfile(results_path,'specs_ap_exp.mat'),'exp','pa_mask','hc_mask','r_squared','mae','succeed');
 
 
