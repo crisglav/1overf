@@ -1,12 +1,13 @@
-# Randomizations for the specification curve analysis of hypothesis 3.
+# Randomizations for the specification curve analysis of hypothesis 2.
 #
 # We randomize the order of pain ratings 500 times, so that pain ratings do not match the participants. 
 # For each randomization and specification, we perform a bayesian correlation 
 # between age-corrected aperiodic exponents and age-corrected randomized pain ratings.
 # Aperiodic exponents and pain ratings are corrected for age by regressing out age from them.
 
-# clear variables
+# clear variables, set seed
 rm(list=ls())
+set.seed(123)
 
 # load libraries
 # install.packages("BayesFactor")
@@ -29,7 +30,7 @@ residuals_pain_original <- resid(model_pain)
 
 # Folder with the output data
 scapath <- "/rechenmagd3/Experiments/2023_1overf/results/sca"
-outpath <- file.path(scapath,"Rinterface_h2")
+outpath <- file.path(scapath,"randomizations_h2")
 if(!dir.exists(outpath)){
   dir.create(outpath)
 }
@@ -54,6 +55,7 @@ nRand = 500
 for (iRand in 0:nRand) {
   
   if (iRand == 0){
+    # Original specification curve
     residuals_pain = residuals_pain_original
   }else{
     # Randomize pain ratings so that they are no longer related to the original participant
@@ -90,7 +92,7 @@ for (iRand in 0:nRand) {
 
   }
   
-  resTab = data.frame(BF, PostRho,R,pvalue)
+  resTab = data.frame(BF,PostRho,R,pvalue)
   
   # Export dataframe as csv
   if (iRand == 0){

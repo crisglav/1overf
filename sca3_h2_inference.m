@@ -8,12 +8,12 @@
 clear all, close all,
 
 % define and create output folder
-datapath = '/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface_h1';
+sca_path = '/rechenmagd3/Experiments/2023_1overf/results/sca/';
+randomizations_path = '/rechenmagd3/Experiments/2023_1overf/results/sca/randomizations_h2';
 figures_path = '../results/figures/sca_inference/';
 if ~exist(figures_path,'dir')
     mkdir(figures_path);
 end
-stats_path = '/rechenmagd3/Experiments/2023_1overf/results/sca/';
 
 % Direction of hypothesis has to be specified by the researcher
 tail = 'both'; % 'right', 'left'
@@ -23,8 +23,8 @@ nSpec = 48;
 nRand = 500;
 
 % LOAD ORIGINAL CURVE
-results_orig = readtable(fullfile(datapath,'stats_orig.csv'));
-[d_orig, ix] = sort(results_orig.d);
+results_orig = readtable(fullfile(randomizations_path,'stats_orig.csv'));
+[d_orig, ix] = sort(results_orig.R);
 bf_temp = results_orig.BF;
 bf_orig = bf_temp(ix); % Sort according the effect size
 pvalues_temp = results_orig.pvalue;
@@ -36,8 +36,8 @@ bf_rand = nan(nSpec,nRand);
 pvalues_rand = nan(nSpec,nRand);
 for iRand=1:nRand
     % load statistics of randomizations
-    results = readtable(fullfile(datapath,sprintf('stats_rand%.3d.csv',iRand)));
-    [d_rand(:,iRand),ix] = sort(results.d);
+    results = readtable(fullfile(randomizations_path,sprintf('stats_rand%.3d.csv',iRand)));
+    [d_rand(:,iRand),ix] = sort(results.R);
     bf_temp = results.BF;
     bf_rand(:,iRand) = bf_temp(ix);
     pvalues_temp = results.pvalue;
@@ -78,17 +78,17 @@ xlim([1 nSpec]);
 ylim([-0.5,0.5])
 yline(0);
 title('Null distribution of specification curves');
-ylabel('Effect size (Cohens d)')
+ylabel('Effect size (R)')
 xlabel('Specifications (nr, sorted by effect size)')
 set(gca, 'TickDir', 'out');
 box off
 legend({'Observed data','Median under the null','2.5th and 97.5th under the null'})
 text(max(xlim)-2, -0.4, sprintf('p_{median} = %.2f      p_{BFcount} = %.2f      p_{aggr} = %.2f', p_median, p_share,p_aggregate), 'Horiz', 'right', 'Vert', 'top', 'LineWidth', 1);
-saveas(f,fullfile(figures_path,'sca_h1_inference.svg'));
+saveas(f,fullfile(figures_path,'sca_h2_inference.svg'));
 
 % Save data in csv
 t = table(d_orig,sort(prctile(d_rand,50,2)),lowPC,highPC,'VariableNames',{'d_orig','d_median','lowPC','highPC'});
-writetable(t, fullfile(stats_path,'sca_h1_inference.csv'));
+writetable(t, fullfile(sca_path,'sca_h2_inference.csv'));
 
 % % Histogram of the median values
 % figure;

@@ -4,7 +4,8 @@
 # For each randomization and specification, we perform a bayesian two-sided t-test 
 # between groups, after correcting the aperiodic components for age.
 
-# clear variables
+
+# clear variables, set seed
 rm(list=ls())
 set.seed(123)
 
@@ -16,14 +17,20 @@ library(BayesFactor)
 library(R.matlab)
 library(effsize)
 
-# Load age data
+# Load age data from the main analysis' results.
 file <- "/rechenmagd3/Experiments/2023_1overf/results/statistics/exp_PFC_real.csv"
 participants = read.csv(file, header = TRUE, sep = ",")
 age = participants$age
 
+# Folder with the output data
+scapath <- "/rechenmagd3/Experiments/2023_1overf/results/sca"
+outpath <- file.path(scapath,"randomizations_h1")
+if(!dir.exists(outpath)){
+  dir.create(outpath)
+}
+
 # Load original specification curve 
-file <- "/rechenmagd3/Experiments/2023_1overf/results/sca/specs_ap_exp.mat"
-mat_data <- readMat(file)
+mat_data <- readMat(file.path(scapath,"specs_ap_exp.mat"))
 
 # Patient mask
 pa_mask_original = as.logical(mat_data$pa.mask)
@@ -104,7 +111,7 @@ for (iRand in 0:nRand) {
     # d[iSpec] = eff$estimate
   }
   
-  resTab = data.frame(BF, PostDelta,d,pvalue)
+  resTab = data.frame(BF,PostDelta,d,pvalue)
   
   # Export dataframe as csv
   if (iRand == 0){
@@ -112,6 +119,6 @@ for (iRand in 0:nRand) {
   }else{
     csvname <- sprintf("stats_rand%0.3d.csv",iRand)
   }
-  csvpath <- file.path("/rechenmagd3/Experiments/2023_1overf/results/sca/Rinterface_h1_noage",csvname)
+  csvpath <- file.path(outpath,csvname)
   write.csv(resTab, file = csvpath, row.names = FALSE)
 }
