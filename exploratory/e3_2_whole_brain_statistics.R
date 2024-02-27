@@ -13,6 +13,7 @@ mat_data <- readMat(datapath)
 # between healthy and patients
 nRoi = dim(mat_data$apexp)[2]
 bf_apexp <- numeric(nRoi)
+bf_apexp_noage <- numeric(nRoi)
 for (iRoi in 1:nRoi) {
   apexp = mat_data$apexp[,iRoi]
   
@@ -28,9 +29,11 @@ for (iRoi in 1:nRoi) {
   bttest = ttestBF(res_hc, res_pa, mu = 0, paired = FALSE, rscale = "medium", posterior = FALSE)
   bf_apexp[iRoi] = as.data.frame(bttest)$bf
   
-  # apexp_pa = apexp[mat_data$pa.mask]
-  # apexp_hc = apexp[mat_data$hc.mask]
-  
+  # Test without taking age into account
+  apexp_pa = apexp[as.logical(mat_data$pa.mask)]
+  apexp_hc = apexp[as.logical(mat_data$hc.mask)]
+  bttest = ttestBF(apexp_hc, apexp_pa, mu = 0, paired = FALSE, rscale = "medium", posterior = FALSE)
+  bf_apexp_noage[iRoi] = as.data.frame(bttest)$bf  
 }
 
 #################################################
