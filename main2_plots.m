@@ -92,7 +92,7 @@ end
 %% Hypothesis 1: Do aperiodic exponents in the mPFC differ between patients and healthy participants?
 
 % For visualization here only, regress out age from the aperiodic exponents
-age = participants.age;
+age = participants_sorted.age;
 model_apexp = fitlm(age, apexp);
 residuals_apexp = model_apexp.Residuals.Raw;
 
