@@ -124,22 +124,17 @@ end
 [pthr, pcor, padj] = fdr(p_value_apexp_res);
 [pthr, pcor, padj] = fdr(p_value_apexp);
 
-%% Plot rois
-index = fix((1:100-1)/(99)*256)+1;
-rgb = squeeze(ind2rgb(1:100,plasma));
-figure;
-ft_plot_mesh(surf, 'edgecolor', 'none', 'vertexcolor', 'curv','facealpha',0.2);
-ft_plot_mesh(pos(53,:), 'vertexsize',20);
+
 
 %% Plots
 surf = ft_read_headshape('surface_white_both.mat');
 pos = params.sourcemodel_atlas.pos;
 
-% Figure 1: Average aperiodic exponents, difference between groups
-f_apexp = wholebrain_plot(mean(apexp_pa),mean(apexp_hc),pos,surf);
-suptitle('Aperiodic exponent')
-saveas(f_apexp,fullfile(figures_path,'e3_whole_brain_apexp.fig'));
-saveas(f_apexp,fullfile(figures_path,'e3_whole_brain_apexp.svg'));
+% % Figure 1: Average aperiodic exponents, difference between groups
+% f_apexp = wholebrain_plot(mean(apexp_pa),mean(apexp_hc),pos,surf);
+% suptitle('Aperiodic exponent')
+% saveas(f_apexp,fullfile(figures_path,'e3_whole_brain_apexp.fig'));
+% saveas(f_apexp,fullfile(figures_path,'e3_whole_brain_apexp.svg'));
 
 
 % % Figure 2: average aperiodic offsets, difference between groups
@@ -156,12 +151,18 @@ suptitle('Age-corrected aperiodic exponent')
 saveas(f_apexp_res,fullfile(figures_path,'e3_whole_brain_apexp_res.svg'));
 
 
-% Figure 4: Age-corrected aperiodic offsets
-f_offset_res = wholebrain_plot(mean(offset_res_pa),mean(offset_res_hc),pos,surf);
-suptitle('Age-corrected aperiodic offset')
-% saveas(f_offset_res,fullfile(figures_path,'e3_whole_brain_offset_res.fig'));
-saveas(f_offset_res,fullfile(figures_path,'e3_whole_brain_offset_res.svg'));
-
+% % Figure 4: Age-corrected aperiodic offsets
+% f_offset_res = wholebrain_plot(mean(offset_res_pa),mean(offset_res_hc),pos,surf);
+% suptitle('Age-corrected aperiodic offset')
+% % saveas(f_offset_res,fullfile(figures_path,'e3_whole_brain_offset_res.fig'));
+% saveas(f_offset_res,fullfile(figures_path,'e3_whole_brain_offset_res.svg'));
+% 
+% %% Plot rois
+% index = fix((1:100-1)/(99)*256)+1;
+% rgb = squeeze(ind2rgb(1:100,plasma));
+% figure;
+% ft_plot_mesh(surf, 'edgecolor', 'none', 'vertexcolor', 'curv','facealpha',0.2);
+% ft_plot_mesh(pos(53,:), 'vertexsize',20);
 %%
 function [main_figure] = wholebrain_plot (patients,healthy,pos,surf)
 
@@ -180,7 +181,7 @@ cmin_diff = min(difference);
 main_figure = figure('Units','centimeters','Position',[0 0 30 10]);
 tiledlayout(1,3);
 try
-    colors = plasma;
+    colors = viridis;
 catch
     colors = parula(256);
 end

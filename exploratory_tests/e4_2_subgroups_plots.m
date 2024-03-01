@@ -106,4 +106,4 @@ legend off;
 ylim([- 0.6 0.6])
 
 % saveas(f2,fullfile(figures_path,'e4_subgroups_h2.svg'));
-saveas(f2,fullfile(figures_path,'e4_subgroups.svg'))
+saveas(f1,fullfile(figures_path,'e4_subgroups.svg'))

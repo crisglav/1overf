@@ -6,7 +6,7 @@
 clear all, close all
 
 % Analsysis type:
-analysis = 'blinded'; % 'blinded' / 'real'
+analysis = 'real'; % 'blinded' / 'real'
 
 % Add plotting functions
 addpath('../toolboxes/raincloudplots');
@@ -101,24 +101,26 @@ res_apexp_hc = residuals_apexp(hc_mask);
 res_apexp_pa = residuals_apexp(pa_mask);
 
 % Plot aperiodic exponents for patients and healthy participants
-f1 = figure();
+f1 = figure('Units','centimeters','Position',[25 25 11 9]);
 ax = gca;
-h1 = raincloud_plot_vertical(res_apexp_hc,'box_dodge',1, 'color', '#69A5C4', 'alpha', 1, 'bxcl', [.5 .5 .5], 'line_width', 1.5, 'box_dodge_amount', 0.5,'dot_dodge_amount',0.5);
-h2 = raincloud_plot_vertical(res_apexp_pa, 'box_dodge', 1, 'color', "#D98F4A", 'alpha',1, 'bxcl', [.5 .5 .5], 'line_width', 1.5, 'box_dodge_amount', 1,'dot_dodge_amount',1);
+h1 = raincloud_plot_vertical(res_apexp_hc,'box_dodge',1, 'color', '#69A5C4', 'alpha', 1, 'bxcl', [.2 .2 .2], 'line_width', 1.5, 'box_dodge_amount', 0.5,'dot_dodge_amount',0.5,'wdth',0.3);
+h2 = raincloud_plot_vertical(res_apexp_pa, 'box_dodge', 1, 'color', "#D98F4A", 'alpha',1, 'bxcl', [.2 .2 .2], 'line_width', 1.5, 'box_dodge_amount', 1,'dot_dodge_amount',1,'wdth',0.3);
  
-legend([h1{1} h2{1}], {'HC', 'PA'});
-title('Age-corrected aperiodic exponents')
+legend([h1{1} h2{1}], {'HC', 'PA'},'Location','southwest');
+% title('H1')
 set(ax,'XTick',[],'XTickLabel',[]);
+ylim([-0.8, 0.8]);
+xlim([-3, 1.5]);
 ylabel('Aperiodic exponent residuals');
 box off
-
+grid on
 % Save aperiodic exponents in a .csv file
 participants_sorted.exp_PFC = apexp';
 participants_sorted.group_binary = pa_mask;
 writetable(participants_sorted, fullfile(stats_path,['exp_PFC_' analysis '.csv']));
 
 % Save figure
-saveas(f1,fullfile(figures_path,'hypothesis1.svg'));
+saveas(f1,fullfile(figures_path,['hypothesis1_' analysis '.svg']));
 
 %% Hypothesis 2: Do aperiodic exponents in the mPFC correlate with pain ratings in patients?
 % To select the subset of aperiodic exponents belonging to the real
@@ -151,7 +153,7 @@ residuals_apexp = model_apexp.Residuals.Raw;
 
 % Scatter plot of residuals
 model_res = fitlm(model_pain.Residuals.Raw, model_apexp.Residuals.Raw);
-f2 = figure;
+f2 = figure('Units','centimeters','Position',[25 25 11 9]);
 h = plot(model_res);
 h(1).Marker = 'o';
 h(1).MarkerFaceColor = '#D98F4A';
@@ -164,14 +166,17 @@ h(4).Color = [0.5 0.5 0.5];
 h(4).LineWidth = 1.5;
 xlabel('Pain residuals');
 ylabel('Aperiodic exponent residuals');
-title('Correlation between aperidoic exponents and pain ratings');
+ylim([-0.6 0.6]);
+% title('H2');
 box off;
-
+legend off;
+grid on;
+% Save figure
+saveas(f2,fullfile(figures_path,['hypothesis2_' analysis '.svg']));
 
 % Save aperiodic exponents in a csv file
 patients_sorted.exp_PFC = apexp_pa_original';
 writetable(patients_sorted, fullfile(stats_path,['patients_PFC_' analysis '.csv']));
 
-% Save figure
-saveas(f2,fullfile(figures_path,'hypothesis2.svg'));
+
 

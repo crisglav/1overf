@@ -72,13 +72,15 @@ res_offset_hc = residuals_offset(hc_mask);
 res_offset_pa = residuals_offset(pa_mask);
 
 % Plot aperiodic offsets for patients and healthy participants
-f1 = figure();
-ax = gca;
-h1 = raincloud_plot_vertical(res_offset_hc,'box_dodge',1, 'color', '#69A5C4', 'alpha', 1, 'bxcl', [.5 .5 .5], 'line_width', 1.5, 'box_dodge_amount', 0.5,'dot_dodge_amount',0.5);
-h2 = raincloud_plot_vertical(res_offset_pa, 'box_dodge', 1, 'color', "#D98F4A", 'alpha',1, 'bxcl', [.5 .5 .5], 'line_width', 1.5, 'box_dodge_amount', 1,'dot_dodge_amount',1);
- 
-legend([h1{1} h2{1}], {'HC', 'PA'});
-title('Age-corrected aperiodic offsets')
+f1 = figure('Units','centimeters','Position',[25 25 22 9]);
+tiledlayout(1,2);
+ax = nexttile;
+h1 = raincloud_plot_vertical(res_offset_hc,'box_dodge',1, 'color', '#69A5C4', 'alpha', 1, 'bxcl', [.2 .2 .2], 'line_width', 1.5, 'box_dodge_amount', 0.5,'dot_dodge_amount',0.5,'wdth',0.3);
+h2 = raincloud_plot_vertical(res_offset_pa, 'box_dodge', 1, 'color', "#D98F4A", 'alpha',1, 'bxcl', [.2 .2 .2], 'line_width', 1.5, 'box_dodge_amount', 1,'dot_dodge_amount',1,'wdth',0.3);
+xlim([-3, 1.5])
+
+legend([h1{1} h2{1}], {'HC', 'PA'},'Location','southwest');
+title('H1 offset')
 set(ax,'XTick',[],'XTickLabel',[]);
 ylabel('Aperiodic offsets residuals');
 box off
@@ -89,7 +91,7 @@ participants_sorted.group_binary = pa_mask;
 writetable(participants_sorted, fullfile(stats_path,'e2_offset_h1.csv'));
 
 % Save figure
-saveas(f1,fullfile(figures_path,'e2_offset_h1.svg'));
+% saveas(f1,fullfile(figures_path,'e2_offset_h1.svg'));
 
 %% Hypothesis 2: Do aperiodic offsets in the mPFC correlate with pain ratings in patients?
 % To select the subset of aperiodic offsets belonging to the real
@@ -122,7 +124,8 @@ residuals_offset = model_offset.Residuals.Raw;
 
 % Scatter plot of residuals
 model_res = fitlm(model_pain.Residuals.Raw, model_offset.Residuals.Raw);
-f2 = figure;
+% f2 = figure;
+nexttile;
 h = plot(model_res);
 h(1).Marker = 'o';
 h(1).MarkerFaceColor = '#D98F4A';
@@ -135,8 +138,9 @@ h(4).Color = [0.5 0.5 0.5];
 h(4).LineWidth = 1.5;
 xlabel('Pain residuals');
 ylabel('Aperiodic offset residuals');
-title('Correlation between aperidoic offsets and pain ratings');
+title('H2 offset');
 box off;
+legend off;
 
 
 % Save aperiodic offsets in a csv file
@@ -144,5 +148,5 @@ patients_sorted.offset_PFC = offset_pa_original';
 writetable(patients_sorted, fullfile(stats_path,'e2_offset_h2.csv'));
 
 % Save figure
-saveas(f2,fullfile(figures_path,'e2_offset_h2.svg'));
-
+% saveas(f2,fullfile(figures_path,'e2_offset_h2.svg'));
+saveas(f1,fullfile(figures_path,'e2_offset.svg'));
