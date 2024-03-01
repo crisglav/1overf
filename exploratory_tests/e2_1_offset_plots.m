@@ -55,7 +55,6 @@ offset = nan(1,n);
 % Load fooof parameters
 for iSubj=1:n
     load(fullfile(fooof_files(iSubj).folder,fooof_files(iSubj).name));
-    
     offset(iSubj) = fm.aperiodic_params(1);
 end
 
@@ -78,7 +77,6 @@ ax = nexttile;
 h1 = raincloud_plot_vertical(res_offset_hc,'box_dodge',1, 'color', '#69A5C4', 'alpha', 1, 'bxcl', [.2 .2 .2], 'line_width', 1.5, 'box_dodge_amount', 0.5,'dot_dodge_amount',0.5,'wdth',0.3);
 h2 = raincloud_plot_vertical(res_offset_pa, 'box_dodge', 1, 'color', "#D98F4A", 'alpha',1, 'bxcl', [.2 .2 .2], 'line_width', 1.5, 'box_dodge_amount', 1,'dot_dodge_amount',1,'wdth',0.3);
 xlim([-3, 1.5])
-
 legend([h1{1} h2{1}], {'HC', 'PA'},'Location','southwest');
 title('H1 offset')
 set(ax,'XTick',[],'XTickLabel',[]);
@@ -94,22 +92,12 @@ writetable(participants_sorted, fullfile(stats_path,'e2_offset_h1.csv'));
 % saveas(f1,fullfile(figures_path,'e2_offset_h1.svg'));
 
 %% Hypothesis 2: Do aperiodic offsets in the mPFC correlate with pain ratings in patients?
-% To select the subset of aperiodic offsets belonging to the real
-% patients we need to extract the mask of real patients.  
-pa_mask_real = ismember(participants_id_sorted,patients_id);
-offset_pa_original = offset(pa_mask_real);
-% Check that you did it well
-% all(ismember(participants_sorted(pa_mask_real,:).participant_id,patients_sorted.participant_id))
-
-% Create a column for age in the patients_sorted file based on the
-% participants_sorted table
-patients_sorted.age = participants_sorted.age(pa_mask_real);
-
 % Get avg pain ratings and age and discard the patient from which we don't have a pain rating
 pain_mask = ~isnan(patients_sorted.avg_pain);
 avg_pain = patients_sorted.avg_pain(pain_mask);
 age_pa = patients_sorted.age(pain_mask);
-offset_pa = offset_pa_original(pain_mask);
+offset_pa = offset(pa_mask);
+offset_pa = offset_pa(pain_mask);
 
 % For visualization here only, regress out age from the pain ratings
 model_pain = fitlm(age_pa, avg_pain);
@@ -118,9 +106,6 @@ residuals_pain = model_pain.Residuals.Raw;
 % For visualization here only, regress out age from the aperiodic offsets
 model_offset = fitlm(age_pa, offset_pa);
 residuals_offset = model_offset.Residuals.Raw;
-
-% figure, plot(model_pain);
-% figure, plot(model_apexp);
 
 % Scatter plot of residuals
 model_res = fitlm(model_pain.Residuals.Raw, model_offset.Residuals.Raw);
@@ -141,7 +126,6 @@ ylabel('Aperiodic offset residuals');
 title('H2 offset');
 box off;
 legend off;
-
 
 % Save aperiodic offsets in a csv file
 patients_sorted.offset_PFC = offset_pa_original';

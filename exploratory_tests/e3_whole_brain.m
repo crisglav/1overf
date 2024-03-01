@@ -8,11 +8,9 @@ clear all,
 close all;
 
 % Add fieldtrip and analysis functions
-addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
-ft_defaults;
-addpath('../analysis_functions');
+% addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
+% ft_defaults;
 addpath('../fooof_matlab');
-addpath('../../toolboxes/raincloudplots');
 addpath('../../toolboxes/matplotlib');
 addpath('../../toolboxes');
 
@@ -27,13 +25,17 @@ end
 figures_path = '../../results/figures';
 power_path = '../../results/features/power';
 
+% For plotting
+surf = ft_read_headshape('surface_white_both.mat');
+pos = params.sourcemodel_atlas.pos;
+
 % Define the number of cores for parallelization
 % params.Ncores = 25;
 % if(isempty(gcp('nocreate')))
 %     parObj = parpool(params.Ncores);
 % end
-%% Load data and fit fooof
 
+%% Demographics data
 % Participants file
 participants = readtable(fullfile(params.RawDataPath,'participants_clean.tsv'),'Filetype','text');
 participants.group = categorical(participants.group);
@@ -49,9 +51,19 @@ age = participants_sorted.age;
 pa_mask = participants_sorted.group == 'pa';
 hc_mask = participants_sorted.group == 'hc';
 
+% Load patients data
+patients = readtable(fullfile(params.RawDataPath,'patients_clean.tsv'),'Filetype','Text');
+
+% Order the patients table in descending order by bidsID
+patients_id = cellfun(@(x) str2double(x(5:7)),patients.participant_id,'UniformOutput',false);
+patients_id = cell2mat(patients_id);
+[~,ix] = sort(patients_id);
+patients_sorted = patients(ix,:);
+
 nRoi = 100;
 nSubj = height(participants);
-
+nPa = height(patients);
+%% Fooof data
 % Check if the data exists and load it
 if exist(fullfile(out_path, 'e3_whole_brain.mat'),'file')
     load(fullfile(out_path, 'e3_whole_brain.mat'));
@@ -59,7 +71,6 @@ else
 
     % Power files
     power_files = dir(fullfile(power_path, '*.mat'));
-    
     
     % Preallocate variables for aperiodic exponents and offsets
     apexp = nan(nSubj,nRoi);
@@ -84,139 +95,126 @@ else
         apexp(iSubj,:) = cellfun(@(x) x.aperiodic_params(end), fm.group_results);
         offset(iSubj,:) = cellfun(@(x) x.aperiodic_params(1), fm.group_results);
     end
-    
     % Save into disk
     save(fullfile(out_path, 'e3_whole_brain.mat'),'apexp','offset','pa_mask','hc_mask','age');
 end
 
-% Regress out age from aperiodic exponents and offsets (for visualization)
+
+%% Hypothesis 1: Do aperiodic exponents in 100 rois differ between patients and healthy participants?
+
+% Regress out age from the aperiodic exponents
 apexp_res = nan(size(apexp));
-offset_res = nan(size(offset));
 for iRoi=1:nRoi
     model_apexp = fitlm(age,apexp(:,iRoi));
     apexp_res(:,iRoi) = model_apexp.Residuals.Raw;
-    model_offset = fitlm(age,offset(:,iRoi));
-    offset_res(:,iRoi) = model_offset.Residuals.Raw;
 end
 
-% Separate data into groups
-apexp_pa = apexp(pa_mask,:);
-apexp_hc = apexp(hc_mask,:);
-offset_pa = offset(pa_mask,:);
-offset_hc = offset(hc_mask,:);
-
+% Separate residuals per groups
 apexp_res_pa = apexp_res(pa_mask,:);
 apexp_res_hc = apexp_res(hc_mask,:);
-offset_res_pa = offset_res(pa_mask,:);
-offset_res_hc = offset_res(hc_mask,:);
 
-%% Statistics
+% Statistics
 % As, as far as we know there is no possiblity to correct for multiple comparisions
-% with bayesian statistics, we performed 100 frequentist t-tests bewtween groups
+% with bayesian statistics. Therfore we performed 100 frequentist t-tests bewtween groups
 % (one test per ROI) and corrected the p-values with the false discovery
 % rate.
-p_value_apexp = nan(nRoi,1);
-p_value_apexp_res = nan(nRoi,1);
+pval_h1 = nan(nRoi,1);
 for iRoi = 1:nRoi
-    [~,p_value_apexp(iRoi)] = ttest2(apexp_hc(:,iRoi),apexp_pa(:,iRoi),'tail','both');
-    [~,p_value_apexp_res(iRoi)] = ttest2(apexp_res_hc(:,iRoi),apexp_res_pa(:,iRoi),'tail','both');
+    [~,pval_h1(iRoi)] = ttest2(apexp_res_hc(:,iRoi),apexp_res_pa(:,iRoi),'tail','both');
 end
-[pthr, pcor, padj] = fdr(p_value_apexp_res);
-[pthr, pcor, padj] = fdr(p_value_apexp);
+[~, ~, padj_h1] = fdr(pval_h1);
+any(padj_h1 < 0.05);
 
-
-
-%% Plots
-surf = ft_read_headshape('surface_white_both.mat');
-pos = params.sourcemodel_atlas.pos;
-
-% % Figure 1: Average aperiodic exponents, difference between groups
-% f_apexp = wholebrain_plot(mean(apexp_pa),mean(apexp_hc),pos,surf);
-% suptitle('Aperiodic exponent')
-% saveas(f_apexp,fullfile(figures_path,'e3_whole_brain_apexp.fig'));
-% saveas(f_apexp,fullfile(figures_path,'e3_whole_brain_apexp.svg'));
-
-
-% % Figure 2: average aperiodic offsets, difference between groups
-% f_offset = wholebrain_plot(mean(offset_pa), mean(offset_hc),pos,surf);
-% suptitle('Aperiodic offset')
-% saveas(f_offset,fullfile(figures_path,'e3_whole_brain_offset.fig'));
-% saveas(f_offset,fullfile(figures_path,'e3_whole_brain_offset.svg'));
-
-%%
-% Figure 3: Age-corrected aperiodic exponents
-f_apexp_res = wholebrain_plot(mean(apexp_res_pa),mean(apexp_res_hc),pos,surf);
-suptitle('Age-corrected aperiodic exponent')
-% saveas(f_apexp,fullfile(figures_path,'e3_whole_brain_apexp_res.fig'));
-saveas(f_apexp_res,fullfile(figures_path,'e3_whole_brain_apexp_res.svg'));
-
-
-% % Figure 4: Age-corrected aperiodic offsets
-% f_offset_res = wholebrain_plot(mean(offset_res_pa),mean(offset_res_hc),pos,surf);
-% suptitle('Age-corrected aperiodic offset')
-% % saveas(f_offset_res,fullfile(figures_path,'e3_whole_brain_offset_res.fig'));
-% saveas(f_offset_res,fullfile(figures_path,'e3_whole_brain_offset_res.svg'));
-% 
-% %% Plot rois
-% index = fix((1:100-1)/(99)*256)+1;
-% rgb = squeeze(ind2rgb(1:100,plasma));
-% figure;
-% ft_plot_mesh(surf, 'edgecolor', 'none', 'vertexcolor', 'curv','facealpha',0.2);
-% ft_plot_mesh(pos(53,:), 'vertexsize',20);
-%%
-function [main_figure] = wholebrain_plot (patients,healthy,pos,surf)
-
-% Difference between groups
-difference = healthy - patients;
-
-% Color limits
-cmax_p = max(patients);
-cmin_p = min(patients);
-cmax_hc = max(healthy);
-cmin_hc = min(healthy);
-cmax_diff = max(difference);
-cmin_diff = min(difference);
-
-% Create a figure with tiled layout
-main_figure = figure('Units','centimeters','Position',[0 0 30 10]);
+%% Plot
+f1 = figure('Units','centimeters','Position',[0 0 30 10]);
 tiledlayout(1,3);
+
+% Create a color scale for data from the patients and healthy, where the
+% color at the bottom of the scale is min(min(data_pa),min(data_hc)) and
+% the color at the top of the scale is max(max(data_pa),max(data_hc))
+data_hc = mean(apexp_res_hc);
+data_pa = mean(apexp_res_pa);
+cmin = min(min(data_pa),min(data_hc));
+cmax = max(max(data_pa),max(data_hc));
+
+ax = nexttile;
+ax = wholebrain_plot(ax,data_hc,cmin,cmax,surf,pos);
+title('Healthy');
+
+ax = nexttile;
+ax = wholebrain_plot(ax,data_pa,cmin,cmax,surf,pos);
+title('Patients');
+
+data_diff = mean(apexp_res_hc)-mean(apexp_res_pa);
+% cmin = min(data_diff);
+% cmax = max(data_diff);
+cmin = -max(abs(data_diff));
+cmax = max(abs(data_diff));
+
+ax = nexttile;
+ax = wholebrain_plot(ax,data_diff,cmin,cmax,surf,pos);
+title('Healthy - Patients');
+
+suptitle('Age-corrected aperiodic exponent')
+% saveas(f1,fullfile(figures_path,'e3_whole_brain_h1_plasma.svg'));
+
+%% Hypothesis 2: Do aperiodic exponents in 100 rois correlate with pain intensity in patients?
+% Get avg pain ratings and age and discard the patient from which we don't have a pain rating
+pain_mask = ~isnan(patients_sorted.avg_pain);
+avg_pain = patients_sorted.avg_pain(pain_mask);
+age_pa = patients_sorted.age(pain_mask);
+apexp_pa = apexp(pa_mask,:);
+apexp_pa = apexp_pa(pain_mask,:);
+
+% Regress out age from the pain ratings
+model_pain = fitlm(age_pa, avg_pain);
+pain_res = model_pain.Residuals.Raw;
+
+% Regress out age from aperiodic exponents
+apexp_res_pa = nan(size(apexp_pa));
+for iRoi=1:nRoi
+    model_apexp_pa = fitlm(age_pa,apexp_pa(:,iRoi));
+    apexp_res_pa(:,iRoi) = model_apexp_pa.Residuals.Raw;
+end
+
+% Statistics
+% Correlate aperiodic exponents residuals with pain residuals with
+% Pearson's correlation for each ROI and correct all the p-values with fdr.
+[rho, pval_h2] = corr(pain_res,apexp_res_pa);
+[~, ~, padj_h2] = fdr(pval_h2);
+any(padj_h2 < 0.05);
+
+%% Plot
+f2 = figure('Units','centimeters','Position',[0 0 10 10]);
+
+% Color-code the correlation
+cmin = -max(abs(rho));
+cmax = max(abs(rho));
+
+ax = gca;
+ax = wholebrain_plot(ax,rho,cmin,cmax,surf,pos);
+title('Correlation');
+saveas(f2,fullfile(figures_path,'e3_whole_brain_h2_plasma.svg'));
+%%
+function ax = wholebrain_plot (ax,data,cmin,cmax,surf,pos)
 try
-    colors = viridis;
+    colors = plasma;
 catch
     colors = parula(256);
 end
-% Healthy
-index = fix((healthy-cmin_hc)/(cmax_hc-cmin_hc)*256)+1;
+% Assign data to colors
+index = fix((data-cmin)/(cmax-cmin)*256)+1;
 rgb = squeeze(ind2rgb(index,colors));
-ax_hc = nexttile;
-ft_plot_mesh(surf, 'edgecolor', 'none', 'vertexcolor', 'curv','facealpha',0.2);
-ft_plot_mesh(pos, 'vertexsize',20, 'vertexcolor',rgb);
-title('Healthy')
 
-% Patients
-index = fix((patients-cmin_p)/(cmax_p-cmin_p)*256)+1;
-rgb = squeeze(ind2rgb(index,colors));
-ax_p = nexttile;
-ft_plot_mesh(surf, 'edgecolor', 'none', 'vertexcolor', 'curv','facealpha',0.2);
-ft_plot_mesh(pos, 'vertexsize',20, 'vertexcolor',rgb);
-title('Patients')
+% Plot walnut brain
+ft_plot_mesh(surf, 'edgecolor', 'none', 'vertexcolor', 'curv','facealpha',0.2,'facecolor','brain');
 
-% Difference
-index = fix((difference - cmin_diff)/(cmax_diff-cmin_diff)*256)+1;
-rgb = squeeze(ind2rgb(index,colors));
-ax_diff = nexttile;
-ft_plot_mesh(surf, 'edgecolor', 'none', 'vertexcolor', 'curv','facealpha',0.2);
+% Overlay ROIS with the data color-coded
 ft_plot_mesh(pos, 'vertexsize',20, 'vertexcolor',rgb);
-title('Healthy - Patients')
 
-%%
 % Set colormap and color limits for all subplots
-set(ax_hc, 'Colormap', colors, 'CLim', [min(cmin_p,cmin_hc) max(cmax_p,cmax_hc)])
-set(ax_p, 'Colormap', colors, 'CLim', [min(cmin_p,cmin_hc) max(cmax_p,cmax_hc)])
-set(ax_diff, 'Colormap', colors, 'CLim', [cmin_diff cmax_diff]);
+set(ax, 'Colormap', colors,'CLim', [cmin cmax])
 
-% assign color bar to one tile
-colorbar(ax_hc(end),'eastoutside');
-colorbar(ax_p(end),'eastoutside');
-colorbar(ax_diff(end),'eastoutside');
+% Add colorbar
+colorbar(ax(end),'eastoutside');
 end
