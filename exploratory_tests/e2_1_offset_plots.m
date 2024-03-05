@@ -78,10 +78,11 @@ h1 = raincloud_plot_vertical(res_offset_hc,'box_dodge',1, 'color', '#69A5C4', 'a
 h2 = raincloud_plot_vertical(res_offset_pa, 'box_dodge', 1, 'color', "#D98F4A", 'alpha',1, 'bxcl', [.2 .2 .2], 'line_width', 1.5, 'box_dodge_amount', 1,'dot_dodge_amount',1,'wdth',0.3);
 xlim([-3, 1.5])
 legend([h1{1} h2{1}], {'HC', 'PA'},'Location','southwest');
-title('H1 offset')
+title('')
 set(ax,'XTick',[],'XTickLabel',[]);
 ylabel('Aperiodic offsets residuals');
 box off
+grid on
 
 % Save aperiodic offsets in a .csv file
 participants_sorted.offset_PFC = offset';
@@ -96,8 +97,8 @@ writetable(participants_sorted, fullfile(stats_path,'e2_offset_h1.csv'));
 pain_mask = ~isnan(patients_sorted.avg_pain);
 avg_pain = patients_sorted.avg_pain(pain_mask);
 age_pa = patients_sorted.age(pain_mask);
-offset_pa = offset(pa_mask);
-offset_pa = offset_pa(pain_mask);
+offset_pa_original = offset(pa_mask);
+offset_pa = offset_pa_original(pain_mask);
 
 % For visualization here only, regress out age from the pain ratings
 model_pain = fitlm(age_pa, avg_pain);
@@ -123,9 +124,10 @@ h(4).Color = [0.5 0.5 0.5];
 h(4).LineWidth = 1.5;
 xlabel('Pain residuals');
 ylabel('Aperiodic offset residuals');
-title('H2 offset');
+title('');
 box off;
 legend off;
+grid on
 
 % Save aperiodic offsets in a csv file
 patients_sorted.offset_PFC = offset_pa_original';

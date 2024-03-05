@@ -8,8 +8,8 @@ clear all,
 close all;
 
 % Add fieldtrip and analysis functions
-% addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
-% ft_defaults;
+addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
+ft_defaults;
 addpath('../fooof_matlab');
 addpath('../../toolboxes/matplotlib');
 addpath('../../toolboxes');
@@ -156,7 +156,7 @@ ax = wholebrain_plot(ax,data_diff,cmin,cmax,surf,pos);
 title('Healthy - Patients');
 
 suptitle('Age-corrected aperiodic exponent')
-% saveas(f1,fullfile(figures_path,'e3_whole_brain_h1_plasma.svg'));
+saveas(f1,fullfile(figures_path,'e3_whole_brain_h1_plasma.png'));
 
 %% Hypothesis 2: Do aperiodic exponents in 100 rois correlate with pain intensity in patients?
 % Get avg pain ratings and age and discard the patient from which we don't have a pain rating
@@ -194,7 +194,7 @@ cmax = max(abs(rho));
 ax = gca;
 ax = wholebrain_plot(ax,rho,cmin,cmax,surf,pos);
 title('Correlation');
-saveas(f2,fullfile(figures_path,'e3_whole_brain_h2_plasma.svg'));
+saveas(f2,fullfile(figures_path,'e3_whole_brain_h2_plasma.png'));
 %%
 function ax = wholebrain_plot (ax,data,cmin,cmax,surf,pos)
 try

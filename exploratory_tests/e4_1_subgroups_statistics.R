@@ -7,10 +7,15 @@
 rm(list=ls())
 library(BayesFactor)
 library(dplyr)
+library(effsize)
 
 # Load data from the main analysis' results.
 file <- "/rechenmagd3/Experiments/2023_1overf/results/statistics/exp_PFC_real.csv"
 participants = read.csv(file, header = TRUE, sep = ",")
+
+# Output data
+file_cwp <- "/rechenmagd3/Experiments/2023_1overf/results/statistics/e4_cwp.csv"
+file_cbp <- "/rechenmagd3/Experiments/2023_1overf/results/statistics/e4_cbp.csv"
 
 ##################################
 # TRANSFORMATIONS TO THE DATA
@@ -54,52 +59,65 @@ compute_bf <- function (patients, healthy){
 }
 
 
-
 ############################################################
 # CWP vs Healthy subgroup 
 ############################################################
-
-# CWP patients from FM study (Tiemann et. al, 2012), original ID is "sub-FMpaXX"
-cwp_tiemann <- cwp[grepl("sub-FMpa[0-9]{2}",cwp$original_id),]
-hc_tiemann <- hc[grepl("sub-FMhc[0-9]{2}",hc$original_id),]
-
-# CWP patients from NCCP study (Ta Dinh et. al, 2019), original ID is "sub-NCCPpaXX"
-cwp_tadinh <- cwp[grepl("sub-NCCPpa[0-9]{2}",cwp$original_id),]
-hc_tadinh <- hc[grepl("sub-NCCPhc[0-9]{2}",hc$original_id),]
-
-# CWP patients from longitudinal study (Heitmann et. al, 2022), original ID is "sub-XX".
-# This dataset does not have a matching healthy group but it was recorded with the same settings as Ta Dinh dataset
-cwp_heitmann <- cwp[grepl("sub-[0-9]{2}",cwp$original_id),]
-
-# Select a subset of healthy participants that match the characteristics of the CWP participants
-# i.e. that belonged to the same initial project and that don't differ in age or gender
-# We follow an iterative procedure that selects a random subset of healthy participants 
-# until we get evidence that there's no difference between groups in age and gender (BF<0.33)
-
-bf_age <- Inf
-bf_gender <- Inf
-selected_controls <- NULL
-counter <- 0
-while(bf_age >= 0.33 | bf_gender >= 0.33 & counter < 100){
-
-  subset_hc <- rbind(
-    hc_tiemann[sample(nrow(hc_tiemann), nrow(cwp_tiemann), replace = FALSE),],  # select subsample from healthy population of size of the corresp. patient population
-    hc_tadinh[sample(nrow(hc_tadinh), nrow(cwp_tadinh)+nrow(cwp_heitmann), replace = FALSE),]) 
+if (!file.exists(file_cwp)){
+  # CWP patients from FM study (Tiemann et. al, 2012), original ID is "sub-FMpaXX"
+  cwp_tiemann <- cwp[grepl("sub-FMpa[0-9]{2}",cwp$original_id),]
+  hc_tiemann <- hc[grepl("sub-FMhc[0-9]{2}",hc$original_id),]
   
-  bf_results <- compute_bf(cwp, subset_hc)
+  # CWP patients from NCCP study (Ta Dinh et. al, 2019), original ID is "sub-NCCPpaXX"
+  cwp_tadinh <- cwp[grepl("sub-NCCPpa[0-9]{2}",cwp$original_id),]
+  hc_tadinh <- hc[grepl("sub-NCCPhc[0-9]{2}",hc$original_id),]
   
-  bf_age <- bf_results$bf_age
-  bf_gender <- bf_results$bf_gender
-  counter <- counter +1
+  # CWP patients from longitudinal study (Heitmann et. al, 2022), original ID is "sub-XX".
+  # This dataset does not have a matching healthy group but it was recorded with the same settings as Ta Dinh dataset
+  cwp_heitmann <- cwp[grepl("sub-[0-9]{2}",cwp$original_id),]
+  
+  # Select a subset of healthy participants that match the characteristics of the CWP participants
+  # i.e. that belonged to the same initial project and that don't differ in age or gender
+  # We follow an iterative procedure that selects a random subset of healthy participants 
+  # until we get evidence that there's no difference between groups in age and gender (BF<0.33)
+  
+  bf_age <- Inf
+  bf_gender <- Inf
+  selected_controls <- NULL
+  counter <- 0
+  while(bf_age >= 0.33 | bf_gender >= 0.33 & counter < 100){
+    
+    subset_hc <- rbind(
+      hc_tiemann[sample(nrow(hc_tiemann), nrow(cwp_tiemann), replace = FALSE),],  # select subsample from healthy population of size of the corresp. patient population
+      hc_tadinh[sample(nrow(hc_tadinh), nrow(cwp_tadinh)+nrow(cwp_heitmann), replace = FALSE),]) 
+    
+    bf_results <- compute_bf(cwp, subset_hc)
+    
+    bf_age <- bf_results$bf_age
+    bf_gender <- bf_results$bf_gender
+    counter <- counter +1
+  }
+  print("Exit Loop")
+  
+  # Save data in a csv
+  data_cwp <- rbind(subset_hc,cwp)
+  write.table(data_cwp, file = file_cwp, sep=",", row.names = FALSE)
+  
+} else{
+  data_cwp <- read.csv(file_cwp, header = TRUE, sep = ",")
+  subset_hc <- data_cwp[data_cwp$group == "hc",]
+  cwp <- data_cwp[data_cwp$group == "pa",]
 }
-print("Exit Loop")
 
 # H1. Bayesian two sided independent samples t-test between groups on the residuals
 bttest = ttestBF(subset_hc$res_apexp, cwp$res_apexp, mu = 0, paired = FALSE, rscale = "medium", posterior = FALSE)
 post = posterior(bttest,iterations = 1000)
 bf_cwp_h1 = as.data.frame(bttest)$bf
 postdelta_cwp_h1 = median(post[,"delta"])
-
+# Frequentist t-test and effect size (Cohen's d)
+fttest = t.test(subset_hc$res_apexp, cwp$res_apexp, alternative = "two.sided", var.equal = FALSE)
+pvalue_cwp_h1 = fttest$p.value
+eff = cohen.d(subset_hc$res_apexp,cwp$res_apexp)
+cohens_d_cwp_h1 = eff$estimate
 
 # H2. Bayesian correlation between age-corrected aperiodic exponents and age-corrected pain ratings
 # in the CWP dataset
@@ -107,45 +125,60 @@ bcorrelation = correlationBF(y = cwp$res_apexp, x = cwp$res_pain, rscale = "ultr
 post = posterior(bcorrelation,iterations = 1000)
 bf_cwp_h2 = as.data.frame(bcorrelation)$bf
 postrho_cwp_h2 = median(post[,"rho"])
+# Pearson's correlation
+corr = cor.test(y = cwp$res_apexp, x = cwp$res_pain)
+r_cwp_h2 = as.data.frame(corr$estimate)$cor
+pvalue_cwp_h2 = corr$p.value
 
-# Save data in a csv
-data_cwp <- rbind(subset_hc,cwp)
-write.table(data_cwp, file = "/rechenmagd3/Experiments/2023_1overf/results/statistics/e4_cwp.csv", sep=",", row.names = FALSE)
 
 ############################################################
 # CBP vs Healthy subgroup 
 ############################################################
-# All the healthy participants that were not part of the Tiemann study (Tiemann et. al, 2012) share similar characteristics in the recordings
-# original ID is "sub-FMpaXX"
-hc_nottiemann <- hc[!grepl("sub-FMhc[0-9]{2}",hc$original_id),]
-
-# Select a subset of healthy participants that match the characteristics of the CWP participants
-# i.e. that belonged to the same initial project and that don't differ in age or gender
-# We follow an iterative procedure that selects a random subset of healthy participants 
-# until we get evidence that there's no difference between groups in age and gender (BF<0.33)
-
-bf_age <- Inf
-bf_gender <- Inf
-selected_controls <- NULL
-counter <- 0
-while(bf_age >= 0.33 | bf_gender >= 0.33 & counter < 100){
+if (!file.exists(file_cbp)){
   
-  subset_hc <- hc_nottiemann[sample(nrow(hc_nottiemann), nrow(cbp), replace = FALSE),]
-
-  bf_results <- compute_bf(cbp, subset_hc)
+  # All the healthy participants that were not part of the Tiemann study (Tiemann et. al, 2012) share similar characteristics in the recordings
+  # original ID is "sub-FMpaXX"
+  hc_nottiemann <- hc[!grepl("sub-FMhc[0-9]{2}",hc$original_id),]
   
-  bf_age <- bf_results$bf_age
-  bf_gender <- bf_results$bf_gender
-  counter <- counter +1
-}
-print("Exit Loop")
-
+  # Select a subset of healthy participants that match the characteristics of the CWP participants
+  # i.e. that belonged to the same initial project and that don't differ in age or gender
+  # We follow an iterative procedure that selects a random subset of healthy participants 
+  # until we get evidence that there's no difference between groups in age and gender (BF<0.33)
+  
+  bf_age <- Inf
+  bf_gender <- Inf
+  selected_controls <- NULL
+  counter <- 0
+  while(bf_age >= 0.33 | bf_gender >= 0.33 & counter < 100){
+    
+    subset_hc <- hc_nottiemann[sample(nrow(hc_nottiemann), nrow(cbp), replace = FALSE),]
+    
+    bf_results <- compute_bf(cbp, subset_hc)
+    
+    bf_age <- bf_results$bf_age
+    bf_gender <- bf_results$bf_gender
+    counter <- counter +1
+  }
+  print("Exit Loop")
+  # Save data in a csv
+  data_cbp <- rbind(subset_hc,cbp)
+  write.table(data_cbp, file = "/rechenmagd3/Experiments/2023_1overf/results/statistics/e4_cbp.csv", sep=",", row.names = FALSE)
+  
+}else{
+  data_cbp <- read.csv(file_cbp, header = TRUE, sep = ",")
+  subset_hc <- data_cbp[data_cbp$group == "hc",]
+  cbp <- data_cbp[data_cbp$group == "pa",]
+  }
 # H1. Bayesian two sided independent samples t-test between groups on the residuals
 bttest = ttestBF(subset_hc$res_apexp, cbp$res_apexp, mu = 0, paired = FALSE, rscale = "medium", posterior = FALSE)
 post = posterior(bttest,iterations = 1000)
 bf_cbp_h1 = as.data.frame(bttest)$bf
 postdelta_cbp_h1 = median(post[,"delta"])
-
+# Frequentist t-test and effect size (Cohen's d)
+fttest = t.test(subset_hc$res_apexp, cbp$res_apexp, alternative = "two.sided", var.equal = FALSE)
+pvalue_cbp_h1 = fttest$p.value
+eff = cohen.d(subset_hc$res_apexp,cbp$res_apexp)
+cohens_d_cbp_h1 = eff$estimate
 
 # H2. Bayesian correlation between age-corrected aperiodic exponents and age-corrected pain ratings
 # in the CWP dataset
@@ -153,10 +186,12 @@ bcorrelation = correlationBF(y = cbp$res_apexp, x = cbp$res_pain, rscale = "ultr
 post = posterior(bcorrelation,iterations = 1000)
 bf_cbp_h2 = as.data.frame(bcorrelation)$bf
 postrho_cbp_h2 = median(post[,"rho"])
+# Pearson's correlation
+corr = cor.test(y = cbp$res_apexp, x = cbp$res_pain)
+r_cbp_h2 = as.data.frame(corr$estimate)$cor
+pvalue_cbp_h2 = corr$p.value
 
-# Save data in a csv
-data_cbp <- rbind(subset_hc,cbp)
-write.table(data_cbp, file = "/rechenmagd3/Experiments/2023_1overf/results/statistics/e4_cbp.csv", sep=",", row.names = FALSE)
+
 
 
 

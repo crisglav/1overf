@@ -48,6 +48,7 @@ legend([h1{1} h2{1}], {'matched HC', 'CBP'},'Location','southwest');
 set(ax,'XTick',[],'XTickLabel',[]);
 ylabel('Aperiodic exponents residuals');
 box off
+grid on
 
 ax = nexttile(3);
 % xlim([-3, 1.5])
@@ -60,6 +61,7 @@ legend([h1{1} h2{1}], {'matched HC', 'CWP'},'Location','southwest');
 set(ax,'XTick',[],'XTickLabel',[]);
 ylabel('Aperiodic exponents residuals');
 box off
+grid on
 % saveas(f1,fullfile(figures_path,'e4_subgroups_h1.svg'));
 
 
@@ -82,9 +84,10 @@ h(4).Color = [0.5 0.5 0.5];
 h(4).LineWidth = 1.5;
 xlabel('Pain residuals');
 ylabel('Aperiodic exponent residuals');
-% title('CBP patients');
+title('');
 box off;
 legend off;
+grid on
 
 model_cwp = fitlm(cwp.res_pain(cwp_pa_mask), cwp.res_apexp(cwp_pa_mask));
 nexttile;
@@ -100,10 +103,11 @@ h(4).Color = [0.5 0.5 0.5];
 h(4).LineWidth = 1.5;
 xlabel('Pain residuals');
 ylabel('Aperiodic exponent residuals');
-% title('CWP patients');
+title('');
 box off;
 legend off;
 ylim([- 0.6 0.6])
+grid on
 
 % saveas(f2,fullfile(figures_path,'e4_subgroups_h2.svg'));
 saveas(f1,fullfile(figures_path,'e4_subgroups.svg'))
