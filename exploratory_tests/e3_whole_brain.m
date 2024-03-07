@@ -126,37 +126,35 @@ end
 any(padj_h1 < 0.05);
 
 %% Plot
-f1 = figure('Units','centimeters','Position',[0 0 30 10]);
-tiledlayout(1,3);
+f1 = figure('Units','centimeters','Position',[0 0 20 9]);
+tcl = tiledlayout(1,2);
 
-% Create a color scale for data from the patients and healthy, where the
-% color at the bottom of the scale is min(min(data_pa),min(data_hc)) and
-% the color at the top of the scale is max(max(data_pa),max(data_hc))
-data_hc = mean(apexp_res_hc);
-data_pa = mean(apexp_res_pa);
-cmin = min(min(data_pa),min(data_hc));
-cmax = max(max(data_pa),max(data_hc));
+% % Create a color scale for data from the patients and healthy, where the
+% % color at the bottom of the scale is min(min(data_pa),min(data_hc)) and
+% % the color at the top of the scale is max(max(data_pa),max(data_hc))
+% data_hc = mean(apexp_res_hc);
+% data_pa = mean(apexp_res_pa);
+% cmin = min(min(data_pa),min(data_hc));
+% cmax = max(max(data_pa),max(data_hc));
+% 
+% ax = nexttile;
+% ax = wholebrain_plot(ax,data_hc,cmin,cmax,surf,pos);
+% title('Healthy');
+% 
+% ax = nexttile;
+% ax = wholebrain_plot(ax,data_pa,cmin,cmax,surf,pos);
+% title('Patients');
+
+std_pooled = sqrt(((std(apexp_res_hc).^2 + std(apexp_res_pa).^2)) ./ 2);
+cohens_d = (mean(apexp_res_hc)-mean(apexp_res_pa)) ./ std_pooled;
+cmin = -max(abs(cohens_d));
+cmax = max(abs(cohens_d));
 
 ax = nexttile;
-ax = wholebrain_plot(ax,data_hc,cmin,cmax,surf,pos);
-title('Healthy');
-
-ax = nexttile;
-ax = wholebrain_plot(ax,data_pa,cmin,cmax,surf,pos);
-title('Patients');
-
-data_diff = mean(apexp_res_hc)-mean(apexp_res_pa);
-% cmin = min(data_diff);
-% cmax = max(data_diff);
-cmin = -max(abs(data_diff));
-cmax = max(abs(data_diff));
-
-ax = nexttile;
-ax = wholebrain_plot(ax,data_diff,cmin,cmax,surf,pos);
+ax1 = wholebrain_plot(ax,cohens_d,cmin,cmax,surf,pos);
 title('Healthy - Patients');
-
-suptitle('Age-corrected aperiodic exponent')
-saveas(f1,fullfile(figures_path,'e3_whole_brain_h1_plasma.png'));
+%suptitle('Age-corrected aperiodic exponent')
+% saveas(f1,fullfile(figures_path,'e3_whole_brain_h1_plasma.png'));
 
 %% Hypothesis 2: Do aperiodic exponents in 100 rois correlate with pain intensity in patients?
 % Get avg pain ratings and age and discard the patient from which we don't have a pain rating
@@ -185,16 +183,19 @@ end
 any(padj_h2 < 0.05);
 
 %% Plot
-f2 = figure('Units','centimeters','Position',[0 0 10 10]);
+% f2 = figure('Units','centimeters','Position',[0 0 10 10]);
 
+ax = nexttile;
 % Color-code the correlation
 cmin = -max(abs(rho));
 cmax = max(abs(rho));
 
-ax = gca;
-ax = wholebrain_plot(ax,rho,cmin,cmax,surf,pos);
+% ax = gca;
+ax2 = wholebrain_plot(ax,rho,cmin,cmax,surf,pos);
 title('Correlation');
-saveas(f2,fullfile(figures_path,'e3_whole_brain_h2_plasma.png'));
+% saveas(f2,fullfile(figures_path,'e3_whole_brain_h2_plasma.png'));
+% saveas(f1,fullfile(figures_path,'e3_whole_brain.png'));
+% saveas(f1,fullfile(figures_path,'e3_whole_brain_colorbars.svg'));
 %%
 function ax = wholebrain_plot (ax,data,cmin,cmax,surf,pos)
 try
@@ -216,5 +217,5 @@ ft_plot_mesh(pos, 'vertexsize',20, 'vertexcolor',rgb);
 set(ax, 'Colormap', colors,'CLim', [cmin cmax])
 
 % Add colorbar
-colorbar(ax(end),'eastoutside');
+cb = colorbar(ax(end),'eastoutside');
 end

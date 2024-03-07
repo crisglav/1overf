@@ -10,7 +10,6 @@ end
 
 % Direction of hypothesis has to be specified by the researcher
 tail = 'both'; % 'right', 'left'
-groups = {'cwp','cbp'};
 %% LOAD THE DATA
 nSpec = 48;
 nRand = 500;

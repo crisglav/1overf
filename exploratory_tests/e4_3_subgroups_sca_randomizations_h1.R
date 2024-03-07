@@ -117,7 +117,7 @@ for (iRand in 0:nRand) {
     participants_mask = !is.na(apexp)
     
     # Regress out age from the apexp and then do a bayesian ttest on the residuals.
-    model <- lm(apexp[participants_mask] ~ age_cwp_all[participants_mask])
+    model <- lm(apexp[participants_mask] ~ age_cbp_all[participants_mask])
     residuals_apexp <- rep(NA,nSubj_cbp)
     residuals_apexp[participants_mask] <- resid(model)
     

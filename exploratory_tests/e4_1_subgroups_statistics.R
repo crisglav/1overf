@@ -99,9 +99,27 @@ if (!file.exists(file_cwp)){
   }
   print("Exit Loop")
   
-  # Save data in a csv
   data_cwp <- rbind(hc_cwp,cwp)
+  
+  # Regress out age from the aperiodic exponents in the subgroup of participants
+  model <- lm(data_cwp$exp_PFC ~ data_cwp$age)
+  res_apexp <- resid(model)
+  res_cwp <-res_apexp[data_cwp$group == "pa"]
+  res_hc_cwp <-res_apexp[data_cwp$group == "hc"]
+  data_cwp$res_apexp_h1 = res_apexp
+  
+  # Regress out age from the aperiodic exponents in the cwp patients
+  cwp <- data_cwp[data_cwp$group == "pa",]
+  model <- lm(cwp$exp_PFC ~ cwp$age)
+  res_apexp_cwp <-resid(model)
+  # Regress out age from pain ratings in the cwp patients
+  model <- lm(cwp$avg_pain_new ~ cwp$age)
+  res_pain_cwp <-resid(model)
+  data_cwp$res_apexp_h2[data_cwp$group == "pa"] = res_apexp_cwp
+  data_cwp$res_pain_h2[data_cwp$group == "pa"] = res_pain_cwp
+  
   write.table(data_cwp, file = file_cwp, sep=",", row.names = FALSE)
+  
   
 } else{
   data_cwp <- read.csv(file_cwp, header = TRUE, sep = ",")
@@ -109,11 +127,6 @@ if (!file.exists(file_cwp)){
   # cwp <- data_cwp[data_cwp$group == "pa",]
 }
 
-# Regress out age from the aperiodic exponents in the subgroup of participants
-model <- lm(data_cwp$exp_PFC ~ data_cwp$age)
-res_apexp <- resid(model)
-res_cwp <-res_apexp[data_cwp$group == "pa"]
-res_hc_cwp <-res_apexp[data_cwp$group == "hc"]
 
 # H1. Bayesian two sided independent samples t-test between groups on the residuals
 bttest = ttestBF(res_hc_cwp, res_cwp, mu = 0, paired = FALSE, rscale = "medium", posterior = FALSE)
@@ -126,14 +139,6 @@ pvalue_cwp_h1 = fttest$p.value
 eff = cohen.d(res_hc_cwp,res_cwp)
 cohens_d_cwp_h1 = eff$estimate
 
-# Regress out age from the aperiodic exponents in the cwp patients
-cwp <- data_cwp[data_cwp$group == "pa",]
-model <- lm(cwp$exp_PFC ~ cwp$age)
-res_apexp_cwp <-resid(model)
-# Regress out age from pain ratings in the cwp patients
-model <- lm(cwp$avg_pain_new ~ cwp$age)
-res_pain_cwp <-resid(model)
-
 # H2. Bayesian correlation between age-corrected aperiodic exponents and age-corrected pain ratings
 # in the CWP dataset
 bcorrelation = correlationBF(y = res_apexp_cwp, x = res_pain_cwp, rscale = "ultrawide")
@@ -144,6 +149,7 @@ postrho_cwp_h2 = median(post[,"rho"])
 corr = cor.test(y = res_apexp_cwp, x = res_pain_cwp)
 r_cwp_h2 = as.data.frame(corr$estimate)$cor
 pvalue_cwp_h2 = corr$p.value
+
 
 
 ############################################################
@@ -177,6 +183,24 @@ if (!file.exists(file_cbp)){
   print("Exit Loop")
   # Save data in a csv
   data_cbp <- rbind(hc_cbp,cbp)
+  
+  # Regress out age from the aperiodic exponents in the subgroup of participants
+  model <- lm(data_cbp$exp_PFC ~ data_cbp$age)
+  res_apexp <- resid(model)
+  res_cbp <-res_apexp[data_cbp$group == "pa"]
+  res_hc_cbp <-res_apexp[data_cbp$group == "hc"]
+  data_cbp$res_apexp_h1 = res_apexp
+  
+  # Regress out age from the aperiodic exponents in the cbp patients
+  cbp <- data_cbp[data_cbp$group == "pa",]
+  model <- lm(cbp$exp_PFC ~ cbp$age)
+  res_apexp_cbp <-resid(model)
+  # Regress out age from pain ratings in the cwp patients
+  model <- lm(cbp$avg_pain_new ~ cbp$age)
+  res_pain_cbp <-resid(model)
+  data_cbp$res_apexp_h2[data_cbp$group == "pa"] = res_apexp_cbp
+  data_cbp$res_pain_h2[data_cbp$group == "pa"] = res_pain_cbp
+  
   write.table(data_cbp, file = "/rechenmagd3/Experiments/2023_1overf/results/statistics/e4_cbp.csv", sep=",", row.names = FALSE)
   
 }else{
@@ -185,11 +209,6 @@ if (!file.exists(file_cbp)){
   # cbp <- data_cbp[data_cbp$group == "pa",]
 }
 
-# Regress out age from the aperiodic exponents in the subgroup of participants
-model <- lm(data_cbp$exp_PFC ~ data_cbp$age)
-res_apexp <- resid(model)
-res_cbp <-res_apexp[data_cbp$group == "pa"]
-res_hc_cbp <-res_apexp[data_cbp$group == "hc"]
 
 # H1. Bayesian two sided independent samples t-test between groups on the residuals
 bttest = ttestBF(res_hc_cbp, res_cbp, mu = 0, paired = FALSE, rscale = "medium", posterior = FALSE)
@@ -201,14 +220,6 @@ fttest = t.test(res_hc_cbp, res_cbp, alternative = "two.sided", var.equal = FALS
 pvalue_cbp_h1 = fttest$p.value
 eff = cohen.d(res_hc_cbp,res_cbp)
 cohens_d_cbp_h1 = eff$estimate
-
-# Regress out age from the aperiodic exponents in the cbp patients
-cbp <- data_cbp[data_cbp$group == "pa",]
-model <- lm(cbp$exp_PFC ~ cbp$age)
-res_apexp_cbp <-resid(model)
-# Regress out age from pain ratings in the cwp patients
-model <- lm(cbp$avg_pain_new ~ cbp$age)
-res_pain_cbp <-resid(model)
 
 # H2. Bayesian correlation between age-corrected aperiodic exponents and age-corrected pain ratings
 # in the CWP dataset
