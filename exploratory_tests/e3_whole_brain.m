@@ -129,6 +129,19 @@ any(padj_h1 < 0.05);
 f1 = figure('Units','centimeters','Position',[0 0 20 9]);
 tcl = tiledlayout(1,2);
 
+std_pooled = sqrt(((std(apexp_res_hc).^2 + std(apexp_res_pa).^2)) ./ 2);
+cohens_d = (mean(apexp_res_hc)-mean(apexp_res_pa)) ./ std_pooled;
+cmin = -max(abs(cohens_d));
+cmax = max(abs(cohens_d));
+
+ax = nexttile;
+ax1 = wholebrain_plot(ax,cohens_d,cmin,cmax,surf,pos);
+title('Healthy - Patients');
+%suptitle('Age-corrected aperiodic exponent')
+% saveas(f1,fullfile(figures_path,'e3_whole_brain_h1_plasma.png'));
+
+% f1_sup = figure('Units','centimeters','Position',[0 0 20 9]);
+% tcl = tiledlayout(1,2);
 % % Create a color scale for data from the patients and healthy, where the
 % % color at the bottom of the scale is min(min(data_pa),min(data_hc)) and
 % % the color at the top of the scale is max(max(data_pa),max(data_hc))
@@ -144,17 +157,6 @@ tcl = tiledlayout(1,2);
 % ax = nexttile;
 % ax = wholebrain_plot(ax,data_pa,cmin,cmax,surf,pos);
 % title('Patients');
-
-std_pooled = sqrt(((std(apexp_res_hc).^2 + std(apexp_res_pa).^2)) ./ 2);
-cohens_d = (mean(apexp_res_hc)-mean(apexp_res_pa)) ./ std_pooled;
-cmin = -max(abs(cohens_d));
-cmax = max(abs(cohens_d));
-
-ax = nexttile;
-ax1 = wholebrain_plot(ax,cohens_d,cmin,cmax,surf,pos);
-title('Healthy - Patients');
-%suptitle('Age-corrected aperiodic exponent')
-% saveas(f1,fullfile(figures_path,'e3_whole_brain_h1_plasma.png'));
 
 %% Hypothesis 2: Do aperiodic exponents in 100 rois correlate with pain intensity in patients?
 % Get avg pain ratings and age and discard the patient from which we don't have a pain rating

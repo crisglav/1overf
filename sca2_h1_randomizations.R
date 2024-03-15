@@ -29,7 +29,7 @@ if(!dir.exists(outpath)){
   dir.create(outpath)
 }
 
-# Load original specification curve 
+# Load aperiodic exponents for all the specifications
 mat_data <- readMat(file.path(scapath,"specs_ap_exp.mat"))
 
 # Patient mask
