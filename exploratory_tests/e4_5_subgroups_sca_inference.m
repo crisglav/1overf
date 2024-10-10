@@ -1,8 +1,9 @@
-clear all, close all,
-addpath('/rechenmagd3/Experiments/2023_1overf/code/')
+clear all, close all;
+
+addpath('../')
 
 % define and create output folder
-sca_path = '/rechenmagd3/Experiments/2023_1overf/results/sca/';
+sca_path = '../../results/sca/';
 figures_path = '../../results/figures/sca_inference/';
 if ~exist(figures_path,'dir')
     mkdir(figures_path);

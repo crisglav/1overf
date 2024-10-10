@@ -8,7 +8,12 @@ clear all,
 close all;
 
 % Add fieldtrip and analysis functions
-addpath('/rechenmagd4/toolboxes_and_functions/fieldtrip');
+fid = fopen('../params.json');
+raw = fread(fid,inf);
+str = char(raw');
+fclose(fid);
+paths = jsondecode(str);
+addpath(paths.FieldtripPath)
 ft_defaults;
 addpath('../fooof_matlab');
 addpath('../../toolboxes/matplotlib');
@@ -16,6 +21,7 @@ addpath('../../toolboxes');
 
 % Load parameters
 load('../../results/features/params.mat','params');
+params.RawDataPath = '../../data/blinded';
 
 % Create output folders
 out_path = '../../results/features/fooof_matlab/whole_brain';
@@ -123,7 +129,7 @@ for iRoi = 1:nRoi
     [~,pval_h1(iRoi)] = ttest2(apexp_res_hc(:,iRoi),apexp_res_pa(:,iRoi),'tail','both');
 end
 [~, ~, padj_h1] = fdr(pval_h1);
-any(padj_h1 < 0.05);
+any(padj_h1 < 0.05)
 
 %% Plot
 f1 = figure('Units','centimeters','Position',[0 0 20 9]);
@@ -171,16 +177,16 @@ model_pain = fitlm(age_pa, avg_pain);
 pain_res = model_pain.Residuals.Raw;
 
 % Regress out age from aperiodic exponents
-apexp_res_pa = nan(size(apexp_pa));
+apexp_res_pa2 = nan(size(apexp_pa));
 for iRoi=1:nRoi
     model_apexp_pa = fitlm(age_pa,apexp_pa(:,iRoi));
-    apexp_res_pa(:,iRoi) = model_apexp_pa.Residuals.Raw;
+    apexp_res_pa2(:,iRoi) = model_apexp_pa.Residuals.Raw;
 end
 
 % Statistics
 % Correlate aperiodic exponents residuals with pain residuals with
 % Pearson's correlation for each ROI and correct all the p-values with fdr.
-[rho, pval_h2] = corr(pain_res,apexp_res_pa);
+[rho, pval_h2] = corr(pain_res,apexp_res_pa2);
 [~, ~, padj_h2] = fdr(pval_h2);
 any(padj_h2 < 0.05);
 
@@ -195,29 +201,6 @@ cmax = max(abs(rho));
 % ax = gca;
 ax2 = wholebrain_plot(ax,rho,cmin,cmax,surf,pos);
 title('Correlation');
-% saveas(f2,fullfile(figures_path,'e3_whole_brain_h2_plasma.png'));
 % saveas(f1,fullfile(figures_path,'e3_whole_brain.png'));
 % saveas(f1,fullfile(figures_path,'e3_whole_brain_colorbars.svg'));
 %%
-function ax = wholebrain_plot (ax,data,cmin,cmax,surf,pos)
-try
-    colors = plasma;
-catch
-    colors = parula(256);
-end
-% Assign data to colors
-index = fix((data-cmin)/(cmax-cmin)*256)+1;
-rgb = squeeze(ind2rgb(index,colors));
-
-% Plot walnut brain
-ft_plot_mesh(surf, 'edgecolor', 'none', 'vertexcolor', 'curv','facealpha',0.2,'facecolor','brain');
-
-% Overlay ROIS with the data color-coded
-ft_plot_mesh(pos, 'vertexsize',20, 'vertexcolor',rgb);
-
-% Set colormap and color limits for all subplots
-set(ax, 'Colormap', colors,'CLim', [cmin cmax])
-
-% Add colorbar
-cb = colorbar(ax(end),'eastoutside');
-end

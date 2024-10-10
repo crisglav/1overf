@@ -8,10 +8,10 @@
 clear all, close all,
 
 % define and create output folder
-sca_path = '/rechenmagd3/Experiments/2023_1overf/results/sca/';
-randomizations_path = '/rechenmagd3/Experiments/2023_1overf/results/sca/randomizations_e1';
+sca_path = '../../results/sca/';
+randomizations_path = '../../results/sca/randomizations_e1';
 figures_path = '../../results/figures/sca_inference/';
-addpath('/rechenmagd3/Experiments/2023_1overf/code/')
+addpath('..')
 if ~exist(figures_path,'dir')
     mkdir(figures_path);
 end
